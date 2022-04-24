@@ -2,12 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 class single_scenemap():
-    def __init__(self,scenebound, reachable_state):
+    def __init__(self,scenebound, reachable_state, stepsize=0.25):
         self.scenebound = np.asarray(scenebound)
         x_max,y_max = np.max(self.scenebound,axis=0)
         x_min, y_min  = np.min(self.scenebound,axis=0)
         print(x_min,x_max,y_min,y_max)
-        self.stepsize = 0.25
+        self.stepsize = stepsize
         x_max = self.stepsize* (x_max//self.stepsize)
         y_max = self.stepsize* (y_max//self.stepsize)
         x_min = self.stepsize* (x_min//self.stepsize +1)
@@ -29,7 +29,7 @@ class single_scenemap():
         rstate = np.asarray(rstate) # [N x 2]
         rstate[:,0] -= self.x_min
         rstate[:,1] -= self.y_min
-        rstate /= 0.25
+        rstate /= self.stepsize
         rstate = rstate.astype('int32')
         for r in rstate:
             self.grid_map[r[0],r[1]] =0
