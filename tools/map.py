@@ -47,5 +47,9 @@ class single_scenemap():
         y_pos = int((pos[1] - self.y_min)//self.stepsize)
         return [x_pos,y_pos]
 
+    def gridmap2xyz(self,gridmap,y):
+        x = gridmap[0] * self.stepsize + self.x_min
 
-
+        z = gridmap[1] * self.stepsize + self.y_min
+        
+        return dict(x=x,y=y,z=z)
