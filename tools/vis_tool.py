@@ -51,8 +51,14 @@ def plot_frames(event: Union[ai2thor.server.Event, np.ndarray],gridmap : np.ndar
         ax.axis("off")
         plt.show()
 
-
-def show_path(path,gridmap):
-    gridmap_rgb = np.expand_dims(gridmap)
-    gridmap_rgb = np.repeat(gridmap_rgb,3,0)
-    
+def show_video(frames: Sequence[np.ndarray], fps: int = 10):
+    """Show a video composed of a sequence of frames.
+    Example:
+    frames = [
+        controller.step("RotateRight", degrees=5).frame
+        for _ in range(72)
+    ]
+    show_video(frames, fps=5)
+    """
+    frames = ImageSequenceClip(frames, fps=fps)
+    return frames.ipython_display()

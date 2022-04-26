@@ -1,3 +1,5 @@
+import math
+
 class Node:
     def __init__(self,parent,position):
         self.parent = parent
@@ -9,7 +11,7 @@ class Node:
 def heuristic(node,goal):
     dx = abs(node.position[0] - goal.position[0])
     dy = abs(node.position[1] - goal.position[1])
-    return 2*(dx + dy) # + (2**0.5 - 2 * 1) * min(dx, dy)
+    return math.sqrt(dx**2 + dy**2) # + (2**0.5 - 2 * 1) * min(dx, dy)
 
 def astar(map,goal,cpos):
     start_node = Node(None,cpos)
@@ -40,7 +42,7 @@ def astar(map,goal,cpos):
             return path[::-1]
 
         children = []
-        for newpos in [[0,-1],[0,1],[1,0],[-1,0]]:
+        for newpos in [[0,-1],[0,1],[1,0],[-1,0]]:#,[1,-1],[1,1],[-1,-1],[-1,1]]:
             newnodepos = [
                 currentNode.position[0]+newpos[0], 
                 currentNode.position[1]+newpos[1]
