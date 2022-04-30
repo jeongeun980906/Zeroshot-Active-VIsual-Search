@@ -23,8 +23,8 @@ def giveMargintoGridmap(grid_map,wh_quan,margin_quan):
     ToGiveMargin = [list(ele) for ele in ToGiveMargin]
     
     for ele in ToGiveMargin:
-        x,y = ele
-        grid_map[x,y] = 1
+        x,z = ele
+        grid_map[x,z] = 1
 
     return grid_map
 
