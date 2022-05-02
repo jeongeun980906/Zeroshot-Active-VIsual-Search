@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
+from RRT import rrt as rrts
 
 def giveMargintoGridmap(grid_map,wh_quan,margin_quan):
     ToGiveMargin = []
@@ -23,8 +24,8 @@ def giveMargintoGridmap(grid_map,wh_quan,margin_quan):
     ToGiveMargin = [list(ele) for ele in ToGiveMargin]
     
     for ele in ToGiveMargin:
-        x,z = ele
-        grid_map[x,z] = 1
+        w,h = ele
+        grid_map[w,h] = 1
 
     return grid_map
 
@@ -41,12 +42,13 @@ class single_scenemap():
         z_min = self.stepsize* (z_min//self.stepsize +1)
 
         x_len =  x_max- x_min
-        y_len =  z_max- z_min
+        z_len =  z_max- z_min
         # print(x_min,x_max,z_min,z_max)
-        self.x_min = x_min
-        self.z_min = z_min
+        self.x_min, self.x_max = x_min, x_max
+        self.z_min, self.z_max = z_min, z_max
+        self.y_default = reachable_state[0]['y']
         w_quan = int(x_len//self.stepsize)+1
-        h_quan = int(y_len//self.stepsize)+1
+        h_quan = int(z_len//self.stepsize)+1
         
         self.w_quan = w_quan
         self.h_quan = h_quan
@@ -54,7 +56,9 @@ class single_scenemap():
         self.grid_map = np.ones((w_quan,h_quan))
         print(self.grid_map.shape)
         self.get_gridmap(reachable_state,margin)
-
+        
+        self.get_rstate(reachable_state)
+        
     def get_gridmap(self,reachable_state,margin):
         rstate = [[r['x'],r['z']] for r in reachable_state]
         rstate = np.asarray(rstate) # [N x 2]
@@ -87,7 +91,9 @@ class single_scenemap():
         h = int((z - self.z_min)//self.stepsize)
         return [w,h]
 
-    def grid2xyz(self,gridmap,y):
+    def grid2xyz(self,gridmap,y=None):
+        if y==None:
+            y=self.y_default
         x = gridmap[0] * self.stepsize + self.x_min
 
         z = gridmap[1] * self.stepsize + self.z_min
@@ -96,4 +102,14 @@ class single_scenemap():
     
     def setgoalxyz(self,goal):
         self.goal = self.xyz2grid(goal)
+    
+    def setstartxyz(self,start):
+        self.start = self.xyz2grid(start)
         
+    def get_rstate(self,reachable_state):
+        rstate = []
+        for state in reachable_state:
+            w,h = self.xyz2grid(state)
+            rstate.append([w,h])
+            
+        self.rstate = rstate
