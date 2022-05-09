@@ -14,6 +14,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 from ithor_tools.transform import cornerpoint_projection,ndarray
+import time
 
 random.seed(42)
 np.random.seed(42)
@@ -55,7 +56,7 @@ class RRT:
                  goal_sample_rate=5,
                  max_iter=500,
                  path_resolution = None,
-
+                 margin=0
                  ):
         """
         Setting Parameter
@@ -68,7 +69,7 @@ class RRT:
         """        
         # Set controller
         self.controller = controller
-        self.set_rstate(controller)
+        self.set_rstate(controller,margin=margin)
         self.set_play_area()
         self.set_xz2coor_param()
         self.set_delta()
@@ -97,7 +98,7 @@ class RRT:
         play_area = [x_min,x_max,z_min,z_max]
         self.play_area = self.AreaBounds(play_area)
     
-    def set_rstate(self,controller):
+    def set_rstate(self,controller,margin=0):
         controller.step(dict(action='GetReachablePositions'))
         rstate = controller.last_event.metadata['actionReturn']
         
@@ -109,8 +110,24 @@ class RRT:
             state = rstate[idx]
             temp =  ndarray([state['x'],state['z']])
             array_rstate[idx,:] = temp
+        rstate = array_rstate
         
-        self.rstate = array_rstate
+        gridSize = controller.initialization_parameters['gridSize']
+        
+        assert type(margin) == int
+        for _ in range(margin):
+            ls = []
+            for idx,state in enumerate(rstate):
+                diff = rstate-state
+                diff = np.linalg.norm(diff,axis=1)
+                diff = diff < gridSize*1.6
+
+                if np.sum(diff) > 7:
+                    ls.append(state)
+                    
+            rstate = np.array(ls)
+        
+        self.rstate = rstate
 
     def set_goal(self,goal):
         goal = ndarray([goal['x'],goal['z']])
@@ -167,7 +184,7 @@ class RRT:
         print('Can not find path')
         return None  # cannot find path
 
-    def steer_collision(self, from_node, to_node, extend_length=float("inf"),resolution=5, verbose=False):
+    def steer_collision(self, from_node, to_node, extend_length=float("inf"),resolution=20, verbose=False):
         safty_flag = True
         
         new_node = self.Node(from_node.x, from_node.z)
@@ -189,7 +206,7 @@ class RRT:
             idx, closest = self.get_closest_rstate(des_inter)
             
             ## If distance between des and closest is bigger than threshold. Treat as Collision
-            if np.linalg.norm(des_inter-closest) > self.delta * 0.7:
+            if np.linalg.norm(des_inter-closest) > self.delta * 0.6:
                 safty_flag = False
                 return None, safty_flag
         
@@ -201,8 +218,53 @@ class RRT:
         
         return new_node, safty_flag
     
-    def get_Navigation_success_flag(self,path,verbose=False):
+    def rollout(self,path,verbose=False):
+        onestep_mag = 0.1
         
+        # Go to initial point
+        fr_idx = path[0]
+        from_xz = self.rstate[fr_idx]
+        
+        path = path[1:]
+        for idx in path:
+            to_xz = self.rstate[idx]
+            
+            dx,dz = to_xz[0]-from_xz[0], to_xz[1]-from_xz[1]
+            trot = math.atan2(dx,dz)*180/math.pi
+            
+            # Move with constant distance
+            distance = math.sqrt(dx**2+dz**2)
+            iter_num = int(distance/onestep_mag)
+            
+            for i in range(iter_num):
+                to_xz = from_xz + ndarray([onestep_mag * math.cos(trot), onestep_mag * math.sin(trot)])
+                to_idx,to_xz = self.get_closest_rstate(to_xz)
+                
+                if fr_idx != to_idx:
+                    navipath = np.array([fr_idx,to_idx])
+                    flag = self.get_Navigation_success_flag(navipath,verbose=verbose)
+                    if not flag:
+                        return False
+                    fr_idx = to_idx
+            
+            
+            to_idx = idx
+            
+            if fr_idx != to_idx:
+                navipath = np.array([fr_idx,to_idx])
+                flag = self.get_Navigation_success_flag(navipath,verbose=verbose)
+                if not flag:
+                    return False
+            fr_idx = to_idx
+            from_xz = self.rstate[fr_idx]
+            
+        
+        if verbose: print("Navigation Successful!")
+        return True
+    
+    def get_Navigation_success_flag(self,path,verbose=False):
+        gridSize = self.controller.initialization_parameters['gridSize']
+
         # Go to initial point
         from_xz = self.rstate[path[0]]
         from_pos = dict(x=from_xz[0], y=self.y_default, z=from_xz[1])
@@ -210,54 +272,156 @@ class RRT:
         event = self.controller.step(
             action="Teleport",
             position=from_pos,
+            rotation=dict(x=0, y=90, z=0)
         )
         if not event.metadata['lastActionSuccess']:
             if verbose: print("Can not Teleport to inital point")
-            return  None,False
+            return  False
+
         
         path = path[1:]
-        for i,idx in enumerate(path):
-            to_xz = self.rstate[idx]
-            to_pos = dict(x=to_xz[0], y=self.y_default, z=to_xz[1])
+        for id,idx in enumerate(path):
             
-            dx,dz = to_pos['x']-from_pos['x'], to_pos['z']-from_pos['z']
-            trot = math.atan2(dx,dz)*180/math.pi
-            crot = self.controller.last_event.metadata['agent']['rotation']['y'] 
-            rot = trot - crot
-            
-            # RotateRight
-            event = self.controller.step(
-                action="RotateRight",
-                degrees=rot
-            )
-            if not event.metadata['lastActionSuccess']:
-                if verbose: print("Can not Rotate. Problem in {}th element".format(i))
-                return  None,False
-            
-            # MoveAhead
-            event = self.controller.step(
-            action="MoveAhead",
-            moveMagnitude=math.sqrt(dx**2+dz**2)
-            )
-            if not event.metadata['lastActionSuccess']:
-                if verbose: print("Can not MoveAhead. Problem in {}th element".format(i))
-                return None,False
-            
-            # Teleport to current position
+            # Loop untill final_pos == end
             final_pos = self.controller.last_event.metadata['agent']['position']
-            event = self.controller.step(
-                action="Teleport",
-                position=final_pos,
-            )
-            if not event.metadata['lastActionSuccess']:
-                if verbose: print("Can not Teleport2. Problem in {}th element".format(i))
-                return None,False
+            final_pos = ndarray([final_pos['x'], final_pos['z']])
+            end       = self.rstate[idx]
+            while(np.linalg.norm(final_pos- end) > gridSize * 0.8):
+                to_xz = self.rstate[idx]
+                to_pos = dict(x=to_xz[0], y=self.y_default, z=to_xz[1])
+                
+                dx,dz = to_pos['x']-from_pos['x'], to_pos['z']-from_pos['z']
+                trot = math.atan2(dx,dz)*180/math.pi
+                crot = self.controller.last_event.metadata['agent']['rotation']['y'] 
+                rot = trot - crot
+                mag = math.sqrt(dx**2+dz**2)
+                
+                # RotateRight
+                if rot != 0:
+                    ## Notice Internal Bug in AITHOR:: Rotating 0 degrees makes you turn 90 degrees
+                    event = self.controller.step(
+                        action="RotateRight",
+                        degrees=rot
+                    )
+                    if not event.metadata['lastActionSuccess']:
+                        if verbose: print("Can not Rotate. Problem in {}th element".format(id))
+                        return  False
 
+                    
+                # MoveAhead
+                if mag !=0:
+                    event = self.controller.step(
+                        action="MoveAhead",
+                        moveMagnitude=mag
+                        )
+                    if not event.metadata['lastActionSuccess']:
+                        if verbose: print("Can not MoveAhead. Problem in {}th element".format(id))
+                        return False
+
+                    
+                # Teleport to current position
+                final_pos = self.controller.last_event.metadata['agent']['position']
+                event = self.controller.step(
+                    action="Teleport",
+                    position=final_pos,
+                )
+                if not event.metadata['lastActionSuccess']:
+                    if verbose: print("Can not Teleport2. Problem in {}th element".format(id))
+
+                # self.controller.step('Pass')
+                
+                final_pos = self.controller.last_event.metadata['agent']['position']
+                final_pos = ndarray([final_pos['x'], final_pos['z']])
+                end       = self.rstate[idx]
+
+            
             from_pos = to_pos
         
-        if verbose: print("Navigation Successful!")
-        return final_pos,True
+        final_pos = self.controller.last_event.metadata['agent']['position']
+        final_pos = ndarray([final_pos['x'], final_pos['z']])
+        end       = ndarray([self.end.x , self.end.z])
         
+        
+        if np.linalg.norm(final_pos- end) > gridSize * 0.8:
+            if verbose: print("final position not in end point")
+            return False
+        
+        if verbose: print("Navigation Successful!")
+        return True
+    
+    def go_with_teleport(self,path,maxspeed=0.2,verbose=False):
+        rstate = self.rstate
+        frames = []
+
+        fr_pos = rstate[path[0]]
+        self.controller.step(action='Teleport', position = dict(x=fr_pos[0],y=self.y_default, z=fr_pos[1]))
+        frames.append(self.controller.last_event.third_party_camera_frames[0])
+        
+        path = path[1:]
+        for id,idx in enumerate(path):
+            to_pos = rstate[idx]
+            
+            # Get constant distanced points
+            delta = to_pos - fr_pos
+            theta = math.atan2(delta[1],delta[0])
+            d = np.linalg.norm(delta)
+            expand= maxspeed
+            expand_iter = int(d//expand)
+            
+            posx,posz = [],[]
+            posx.append(fr_pos[0]), posz.append(fr_pos[1])
+            for _ in range(expand_iter):
+                posx.append(posx[-1] + math.cos(theta) * expand)
+                posz.append(posz[-1] + math.sin(theta) * expand)
+            posx.append(to_pos[0]),posz.append(to_pos[1])
+            
+            
+            posx = np.array(posx)
+            posz = np.array(posz)
+
+            assert posx.shape==posz.shape
+            
+            for i in range(len(posx)):
+                to_pos = np.array([posx[i],posz[i]])
+                _,to_pos = self.get_closest_rstate(to_pos)
+                
+                if (to_pos==fr_pos).all():
+                    continue
+                
+                dx,dz = to_pos[0]-fr_pos[0], to_pos[1]-fr_pos[1]
+                trot = math.atan2(dx,dz)*180/math.pi
+                crot = self.controller.last_event.metadata['agent']['rotation']['y']
+                
+                rot = trot-crot
+                # Rotate
+                if abs(rot)>1e-2:
+                    event = self.controller.step(
+                        action="RotateRight",
+                        degrees=rot,
+                    )
+                    if not event.metadata['lastActionSuccess']:
+                        if verbose: print("Can not Teleport. Problem in {}th element".format(id))
+                        return False,None
+                # time.sleep(0.1)
+
+                frames.append(self.controller.last_event.third_party_camera_frames[0])
+
+                # Teleport to current position
+                event = self.controller.step(
+                    action="Teleport",
+                    position=dict(x=to_pos[0],y=self.y_default,z=to_pos[1]),
+                    rotation = self.controller.last_event.metadata['agent']['rotation']['y']
+                )
+                if not event.metadata['lastActionSuccess']:
+                    if verbose: print("Can not Teleport. Problem in {}th element".format(id))
+                    return False,None
+                # time.sleep(0.1)
+                frames.append(self.controller.last_event.third_party_camera_frames[0])
+
+            fr_pos = to_pos
+            
+        return True, frames
+                
     def generate_final_course(self):
         goal_ind = len(self.node_list) - 1
         path = [self.end.idx]
@@ -268,8 +432,17 @@ class RRT:
         path.append(node.idx)
 
         path.reverse()
+        
+        # Eliminate repeation
+        newPath = []
+        newPath.append(path[0])
+        path = path[1:]
+        for ele in path:
+            if not(newPath[-1] == ele):
+                newPath.append(ele)
+        path = newPath
         return path
-
+        
     def calc_dist_to_goal(self, x, z):
         dx = x - self.end.x
         dz = z - self.end.z
@@ -319,7 +492,7 @@ class RRT:
 
         if rnd is not None:
             w,h = self.play_area.xz2coor(rnd.x, rnd.z)
-            plt.plot(w,h, "^k")
+            plt.plot(w,h, "^r")
         
         # Cast rrt path to coordinate in image
         topview = self.controller.last_event.third_party_camera_frames[0]
@@ -351,7 +524,7 @@ class RRT:
         # plt.grid(True)
         
         plt.imshow(topview)
-        plt.axis("off")
+        # plt.axis("off")
         plt.show()
         plt.pause(0.001)
 

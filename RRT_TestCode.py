@@ -10,6 +10,8 @@ import math
 from IPython.display import display
 from moviepy.editor import ImageSequenceClip,VideoFileClip
 from matplotlib import transforms
+from RRT import gridmaprrt as rrt
+from RRT import gridmaprrt_pathsmoothing as smoothing
 
 np.random.seed(42)
 random.seed(42)
@@ -18,9 +20,9 @@ random.seed(42)
 gridSize=0.05
 
 controller = Controller(
-    # platform = CloudRendering,
+    platform = CloudRendering,
     agentMode="locobot",
-    visibilityDistance=1.5,
+    # visibilityDistance=1.5,
     scene="FloorPlan_Train1_3",
     gridSize=gridSize,
     movementGaussianSigma=0,
@@ -34,8 +36,8 @@ controller = Controller(
 )
 controller.reset(
     # makes the images a bit higher quality
-    width=400,
-    height=400,
+    width=800,
+    height=800,
 
     # Renders several new image modalities
     renderDepthImage=True,
@@ -62,34 +64,39 @@ rstate = controller.last_event.metadata['actionReturn']
 verbose = False
 
 initstate = 20
-for goalstate in range(300, 3000,100):
 
+for goalstate in list(range(300, 4100,100)):
+    # if not goalstate ==2200:
+    #     continue
+    # print(goalstate)
+
+    random.seed(42)
+    np.random.seed(42)
+    
     controller.step(
         action="Teleport",
         position = rstate[initstate]
     )
 
+    
 
-    from RRT import gridmaprrt as rrt
-
-    rrtplanner = rrt.RRT(controller = controller, expand_dis=0.1,max_iter=10000,goal_sample_rate=20)
-
-
+    rrtplanner = rrt.RRT(controller = controller, expand_dis=0.1,max_iter=10000,goal_sample_rate=20,margin=0)
 
     rrtplanner.set_start(rstate[initstate])
     rrtplanner.set_goal(rstate[goalstate])
     path = rrtplanner.planning(animation=False) # Uncomment "%matplotlib tk" when you want to animate
-    # rrtplanner.plot_path(path)
-    # flag = rrtplanner.get_Navigation_success_flag(path,verbose=verbose)
-
-    from RRT import gridmaprrt_pathsmoothing as smoothing
+    
+    
     smoothpath = smoothing.path_smoothing(rrtplanner,40,verbose=verbose)
 
     # rrtplanner.plot_path(smoothpath)
-    flag = rrtplanner.get_Navigation_success_flag(smoothpath,verbose=verbose)
+    
+    # flag = rrtplanner.get_Navigation_success_flag(smoothpath,verbose=True)
+    # flag = rrtplanner.rollout(smoothpath,verbose=True)
+    
+    flag,frames = rrtplanner.go_with_teleport(smoothpath)
 
     if not flag:
         print(goalstate)
-
 
 pass
