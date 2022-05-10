@@ -53,10 +53,14 @@ class matcher:
             pil_image=Image.fromarray(crop)
             temp = self.clip_preprocess(pil_image).unsqueeze(0)
             res.append(temp)
+        if len(res) == 0:
+            return res,vis
         return torch.cat(res,dim=0),np.concatenate(vis,axis=0)
     
     def matching_score(self,img,pred_boxes):
         patches,vis_patches = self.make_patch(img,pred_boxes.tensor.cpu().numpy())
+        if len(patches) == 0:
+            return [],[]
         image_features = self.clip_model.encode_image(patches.to(self.device))
         dis = torch.matmul(self.text_features,image_features.T)
         print(dis)

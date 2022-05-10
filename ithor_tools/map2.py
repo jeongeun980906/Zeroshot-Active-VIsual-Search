@@ -1,3 +1,4 @@
+from ithor_tools.landmark_utils import check_visbility
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
@@ -87,54 +88,79 @@ class single_scenemap():
             self.grid_map[pos[0],pos[1],:] = self.landmark_colors(color)[:3]
 
     def get_landmark_viewpoint(self,pos,landmark_name,controller):
-        size = int(self.stepsize*50)
-        i = 1
+        ratio = 50
         [x,y] = self.xyz2grid(pos)
-        while True:
-            if self.grid_map[x+i,y,0]*self.grid_map[x-i,y,0]:
-                if self.grid_map[x+i+size,y,0] or self.grid_map[x-i-size,y,0]:
-                    cpos = controller.last_event.metadata['agent']['position']
-                    crot = controller.last_event.metadata['agent']['rotation']
-                    controller.step("Teleport", position = self.grid2xyz([x+i+size,y],0.91), rotation =  270
-                                )
-                    temp = controller.last_event.metadata['objects']
-                    for t in temp:
-                        if t == landmark_name:
-                            print(t['Visible'])
-                            if t['Visible']:
-                                controller.step("Teleport", position = cpos, rotation =  crot
-                                )
-                                return self.grid2xyz([x+i+size,y],0.91), 270
-                    controller.step("Teleport", position = cpos, rotation =  crot
-                                )
-                    return self.grid2xyz([x-i+size,y],0.91), 90
-            if self.grid_map[x,y+i,0]*self.grid_map[x,y-i,0]:
-                if self.grid_map[x,y+i+size,0] or self.grid_map[x,y-i-size,0]:
-                    cpos = controller.last_event.metadata['agent']['position']
-                    crot = controller.last_event.metadata['agent']['rotation']
-                    controller.step("Teleport", position = self.grid2xyz([x,y+i+size],0.91), rotation =  180
-                                )
-                    temp = controller.last_event.metadata['objects']
-                    for t in temp:
-                        if t == landmark_name:
-                            print(t['Visible'])
-                            if t['Visible']:
-                                controller.step("Teleport", position = cpos, rotation =  crot
-                                )
-                                return self.grid2xyz([x,y+i+size],0.91), 180
-                    controller.step("Teleport", position = cpos, rotation =  crot
-                                )
-                    return self.grid2xyz([x,y-i-size],0.91), 0
+        while ratio<200:
+            size = int(self.stepsize*ratio)
+            i = 1
+            while i<20:
+                if self.grid_map[x+i,y,0]*self.grid_map[x-i,y,0]:
+                    if self.grid_map[x+i+size,y,0]:
+                        if self.check_visibility(self.grid2xyz([x+i+size,y],0.91), 270,controller,landmark_name):
+                            return self.grid2xyz([x+i+size,y],0.91), 270
+                    if self.grid_map[x-i-size,y,0]: 
+                        if self.check_visibility(self.grid2xyz([x-i-size,y],0.91), 90,controller,landmark_name):
+                            return self.grid2xyz([x-i-size,y],0.91), 90
 
-            if self.grid_map[x+i,y,0] and self.grid_map[x+i+size,y,0]:
-                return self.grid2xyz([x+i+size,y],0.91), 270
-            elif self.grid_map[x-i,y,0] and self.grid_map[x-i-size,y,0]:
-                return self.grid2xyz([x-i-size,y],0.91), 90
-            elif self.grid_map[x,y+i,0] and self.grid_map[x,y+i+size,0]:
-                return self.grid2xyz([x,y+i+size],0.91), 180
-            elif self.grid_map[x,y-i,0] and self.grid_map[x,y-i-size,0]:
-                return self.grid2xyz([x,y-i-size],0.91), 0
-            else: i+=1
+                if self.grid_map[x,y+i,0]*self.grid_map[x,y-i,0]:
+                    if self.grid_map[x,y+i+size,0]:
+                        if self.check_visibility(self.grid2xyz([x,y+i+size],0.91),180,controller,landmark_name):
+                            return self.grid2xyz([x,y+i+size],0.91), 180
+                    if self.grid_map[x,y-i-size,0]:
+                        if self.check_visibility(self.grid2xyz([x,y-i-size],0.91),0,controller,landmark_name):
+                            return self.grid2xyz([x,y-i-size],0.91), 0
+    
+
+                if self.grid_map[x+i,y,0] and self.grid_map[x+i+size,y,0]:
+                    if self.check_visibility(self.grid2xyz([x+i+size,y],0.91), 270,controller,landmark_name):
+                        return self.grid2xyz([x+i+size,y],0.91), 270
+                if self.grid_map[x-i,y,0] and self.grid_map[x-i-size,y,0]:
+                    if self.check_visibility(self.grid2xyz([x-i-size,y],0.91), 90,controller,landmark_name):
+                        return self.grid2xyz([x-i-size,y],0.91), 90
+                if self.grid_map[x,y+i,0] and self.grid_map[x,y+i+size,0]:
+                    if self.check_visibility(self.grid2xyz([x,y+size+i],0.91), 180,controller,landmark_name):
+                        return self.grid2xyz([x,y+i+size],0.91), 180
+                if self.grid_map[x,y-i,0] and self.grid_map[x,y-i-size,0]:
+                    if self.check_visibility(self.grid2xyz([x,y-i-size],0.91), 0,controller,landmark_name):
+                        return self.grid2xyz([x,y-i-size],0.91), 0
+
+                if self.grid_map[x-int(i/2),y-int(i/2),0] and self.grid_map[x-int(i/2+size/2),y-int(i/2+size/2),0]:
+                    if self.check_visibility(self.grid2xyz([x-int(i/2+size/2),y-int(i/2+size/2)],0.91), 45,controller,landmark_name):
+                        return self.grid2xyz([x-int(i/2+size/2),y-int(i/2+size/2)],0.91), 45
+                
+                if self.grid_map[x+int(i/2),y-int(i/2),0] and self.grid_map[x+int(i/2+size/2),y-int(i/2+size/2),0]:
+                    if self.check_visibility(self.grid2xyz([x+int(i/2+size/2),y-int(i/2+size/2)],0.91), 315,controller,landmark_name):
+                        return self.grid2xyz([x+int(i/2+size/2),y-int(i/2+size/2)],0.91), 315
+                
+                if self.grid_map[x+int(i/2),y+int(i/2),0] and self.grid_map[x+int(i/2+size/2),y+int(i/2+size/2),0]:
+                    if self.check_visibility(self.grid2xyz([x+int(i/2+size/2),y+int(i/2+size/2)],0.91), 225 ,controller,landmark_name):
+                        return self.grid2xyz([x+int(i/2+size/2),y+int(i/2+size/2)],0.91), 225
+
+                if self.grid_map[x-int(i/2),y+int(i/2),0] and self.grid_map[x-int(i/2+size/2),y+int(i/2+size/2),0]:
+                    if self.check_visibility(self.grid2xyz([x-int(i/2+size/2),y+int(i/2+size/2)],0.91), 135,controller,landmark_name):
+                        return self.grid2xyz([x-int(i/2+size/2),y+int(i/2+size/2)],0.91), 135
+
+                i+=1
+            ratio *= 2
+        print("No visible path")
+        return 
+
+    def check_visibility(self,target_pos,target_rot,controller,landmark_name):
+        cpos = controller.last_event.metadata['agent']['position']
+        crot = controller.last_event.metadata['agent']['rotation']
+        controller.step("Teleport", position = target_pos, rotation =  target_rot
+                                    )
+        temp = controller.last_event.metadata['objects']
+        for t in temp:
+            if t['objectType'] == landmark_name:
+                # print(t['visible'])
+                if t['visible']:
+                    controller.step("Teleport", position = cpos, rotation =  crot
+                    )
+                    return True
+        controller.step("Teleport", position = cpos, rotation =  crot
+                    )
+        return False
 
     def plot(self, current_pos, query_object = None):
         cpos = self.xyz2grid(current_pos)
