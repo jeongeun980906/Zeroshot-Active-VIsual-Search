@@ -16,6 +16,10 @@ from torch.utils.data import Dataset, Sampler
 
 from transformers import BartTokenizer
 
+''''
+This code is from COMET ATOIMC2020 
+https://github.com/allenai/comet-atomic-2020/tree/master/models/comet_atomic2020_bart
+'''
 
 def encode_line(tokenizer, line, max_length, pad_to_max_length=True, return_tensors="pt"):
     extra_kw = {"add_prefix_space": True} if isinstance(tokenizer, BartTokenizer) else {}

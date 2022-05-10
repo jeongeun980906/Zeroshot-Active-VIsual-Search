@@ -5,6 +5,13 @@ from pathlib import Path
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from co_occurance.utils import use_task_specific_params, trim_batch
 import os
+
+''''
+This code is from COMET ATOIMC2020 
+https://github.com/allenai/comet-atomic-2020/tree/master/models/comet_atomic2020_bart
+'''
+
+
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
