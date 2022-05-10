@@ -14,6 +14,7 @@ def heuristic(node,goal):
     return math.sqrt(dx**2 + dy**2) # + (2**0.5 - 2 * 1) * min(dx, dy)
 
 def astar(map,goal,cpos):
+    map = 1-map[:,:,0]
     start_node = Node(None,cpos)
     end_node = Node(None,goal)
 
