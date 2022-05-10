@@ -30,13 +30,17 @@ def choose_ladmark(objects):
 
 def gather(controller,query_object,step = 4):
     frames = []
-    frames.append(controller.last_event.frame)
+    frames.append(controller.last_event.cv2img)
+    pos = [dict(pos = controller.last_event.metadata['agent']['position'], 
+                    rot = controller.last_event.metadata['agent']['rotation'])]
     vis = check_visbility(controller.last_event,query_object)
     for _ in range(step-1):
         controller.step(action = "RotateRight", degrees = 360/step)
-        frames.append(controller.last_event.frame)
+        pos.append(dict(pos = controller.last_event.metadata['agent']['position'], 
+                    rot = controller.last_event.metadata['agent']['rotation']))
+        frames.append(controller.last_event.cv2img)
         vis += check_visbility(controller.last_event,query_object)
-    return frames,vis
+    return frames,pos,vis
 
 def check_visbility(event,query_object):
     objs = event.metadata['objects']
@@ -52,6 +56,7 @@ def vis_panorama(frames):
     for e, frame in enumerate(frames):
         plt.subplot(1,col,e+1)
         plt.title("{}".format(e*angle))
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         plt.imshow(frame)
         plt.axis('off')
     plt.show()

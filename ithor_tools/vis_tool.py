@@ -153,9 +153,10 @@ def vis_visit_landmark(query_object,path,controller,scenemap,landmark_config):
         pos = scenemap.xyz2grid(points[0])
         temp[pos[0],pos[1]] = [100,100,200]
     temp = cv2.resize(temp, dsize = (-1,-1),fx = 10,fy=10,interpolation = cv2.INTER_CUBIC)
-    # h,w = temp.shape[0], temp.shape[1]
+    h,w = temp.shape[0], temp.shape[1]
     # print(h,w)
     temp = cv2.rotate(temp, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    
     fig = plt.figure(figsize=(7, 7))
     grid = plt.GridSpec(7, 1, wspace=1, hspace=0.1)
 
