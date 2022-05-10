@@ -1,15 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
-from RRT import rrt as rrts
 
-def giveMargintoGridmap(grid_map,wh_quan,margin_quan):
+def giveMargintoGridmap(gridmap,wh_quan,margin_quan):
     ToGiveMargin = []
     print(margin_quan)
     w_quan,h_quan = wh_quan
     for w in range(w_quan):
         for h in range(h_quan):
-            if grid_map[w,h] == 1:
+            if gridmap[w,h] == 1:
                 # if (x,y) is occupied
                 
                 # make it's neighbor occuppied with with margin
@@ -25,9 +24,9 @@ def giveMargintoGridmap(grid_map,wh_quan,margin_quan):
     
     for ele in ToGiveMargin:
         w,h = ele
-        grid_map[w,h] = 1
+        gridmap[w,h] = 1
 
-    return grid_map
+    return gridmap
 
 class single_scenemap():
     def __init__(self,scenebound, reachable_state, stepsize=0.25, margin=0):
@@ -53,11 +52,11 @@ class single_scenemap():
         self.w_quan = w_quan
         self.h_quan = h_quan
         
-        self.grid_map = np.ones((w_quan,h_quan))
-        print(self.grid_map.shape)
+        self.gridmap = np.ones((w_quan,h_quan))
+        print(self.gridmap.shape)
         self.get_gridmap(reachable_state,margin)
         
-        self.get_rstate(reachable_state)
+        self.rstate = self.get_rstate(reachable_state)
         
     def get_gridmap(self,reachable_state,margin):
         rstate = [[r['x'],r['z']] for r in reachable_state]
@@ -67,19 +66,19 @@ class single_scenemap():
         rstate /= self.stepsize
         rstate = rstate.astype('int32')
         for r in rstate:
-            self.grid_map[r[0],r[1]] =0
+            self.gridmap[r[0],r[1]] =0
         
         w_quan = self.w_quan
         h_quan = self.h_quan
         
         # Give margin to gridmap
         margin_quan = int(margin//self.stepsize)
-        self.grid_map = giveMargintoGridmap(self.grid_map,(w_quan,h_quan), margin_quan)
+        self.gridmap = giveMargintoGridmap(self.gridmap,(w_quan,h_quan), margin_quan)
         
     def plot(self, current_pos):
         x_pos = int((current_pos['x'] - self.x_min)//self.stepsize)
         z_pos = int((current_pos['z'] - self.z_min)//self.stepsize)
-        imshow_grid = copy.deepcopy(self.grid_map)
+        imshow_grid = copy.deepcopy(self.gridmap)
         imshow_grid[x_pos,z_pos] = 0.5
         imshow_grid = np.rot90(imshow_grid)
         return imshow_grid
@@ -91,12 +90,12 @@ class single_scenemap():
         h = int((z - self.z_min)//self.stepsize)
         return [w,h]
 
-    def grid2xyz(self,gridmap,y=None):
+    def grid2xyz(self,wh,y=None):
         if y==None:
             y=self.y_default
-        x = gridmap[0] * self.stepsize + self.x_min
+        x = wh[0] * self.stepsize + self.x_min
 
-        z = gridmap[1] * self.stepsize + self.z_min
+        z = wh[1] * self.stepsize + self.z_min
         
         return dict(x=x,y=y,z=z)
     
@@ -112,4 +111,4 @@ class single_scenemap():
             w,h = self.xyz2grid(state)
             rstate.append([w,h])
             
-        self.rstate = rstate
+        return  rstate
