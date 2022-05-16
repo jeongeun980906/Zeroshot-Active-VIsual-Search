@@ -38,10 +38,10 @@ class depth2world:
                                                                     convert_rgb_to_intensity=False)
         
         pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, self.intrinsic)
-        pcd.transform([[1, 0, 0, 0],
-                        [0, -1, 0, 0],
-                        [0, 0, -1, 0],
-                        [0, 0, 0, 1]])
+        # pcd.transform([[1, 0, 0, 0],
+        #                 [0, -1, 0, 0],
+        #                 [0, 0, -1, 0],
+        #                 [0, 0, 0, 1]])
         rot = agent_rot['y']
         pcd.transform([[math.cos(rot), math.sin(rot), 0, agent_pos['x']],
                         [-math.sin(rot), math.cos(rot), 0, agent_pos['z']],

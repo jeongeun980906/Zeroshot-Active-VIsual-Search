@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 import cv2
 import torch
+import torchvision.ops as OPS
 
 class matcher:
     def __init__(self,query_object_name, threshold = 28, device='cuda'):
@@ -57,14 +58,23 @@ class matcher:
             return res,vis
         return torch.cat(res,dim=0),np.concatenate(vis,axis=0)
     
-    def matching_score(self,img,pred_boxes):
-        patches,vis_patches = self.make_patch(img,pred_boxes.tensor.cpu().numpy())
+    def matching_score(self,img,pred_boxes,gt_box):
+        boxes = pred_boxes.tensor.cpu()
+        if gt_box is not None:
+            gt_box = torch.LongTensor([gt_box])
+            IoU = OPS.box_iou(boxes,gt_box)
+            gt_label = (IoU>0.3)
+        else:
+            gt_label = torch.BoolTensor([False]*boxes.shape[0])
+        patches,vis_patches = self.make_patch(img,boxes.numpy())
         if len(patches) == 0:
-            return [],[]
+            return [],[],torch.BoolTensor([False])
         image_features = self.clip_model.encode_image(patches.to(self.device))
         dis = torch.matmul(self.text_features,image_features.T)
-        print(dis)
-        index = torch.where(dis>self.thres)[1]
-        show_patch = vis_patches[index.cpu().numpy()]
+        # print(dis)
+        index = torch.where(dis>self.thres)[1].cpu()
+        # print(gt_label,index)
+        sucess = gt_label[index]
+        show_patch = vis_patches[index.numpy()]
         candidate_box = pred_boxes[index]
-        return show_patch,candidate_box.tensor.cpu().numpy()
+        return show_patch,candidate_box.tensor.cpu().numpy(),sucess

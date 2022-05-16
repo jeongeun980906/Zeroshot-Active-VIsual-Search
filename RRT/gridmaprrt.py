@@ -358,6 +358,7 @@ class RRT:
         frames.append(self.controller.last_event.third_party_camera_frames[0])
         
         path = path[1:]
+        total_path_len = 0
         for id,idx in enumerate(path):
             to_pos = rstate[idx]
             
@@ -365,6 +366,7 @@ class RRT:
             delta = to_pos - fr_pos
             theta = math.atan2(delta[1],delta[0])
             d = np.linalg.norm(delta)
+            total_path_len += d
             expand= maxspeed
             expand_iter = int(d//expand)
             
@@ -420,7 +422,7 @@ class RRT:
 
             fr_pos = to_pos
             
-        return True, frames
+        return True, total_path_len, frames
                 
     def generate_final_course(self):
         goal_ind = len(self.node_list) - 1
