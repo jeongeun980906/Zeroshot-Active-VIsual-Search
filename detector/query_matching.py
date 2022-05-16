@@ -1,3 +1,13 @@
+# importing sys
+import sys
+
+try:
+    # adding Folder_2 to the system path
+    sys.path.insert(0, '/home/jeongeun/faster_rcnn_rilab')
+    from structures.box import Boxes,pairwise_ioa,pairwise_iou 
+except:
+    print("Import Error")
+    pass
 import clip
 from PIL import Image
 import numpy as np
@@ -61,9 +71,11 @@ class matcher:
     def matching_score(self,img,pred_boxes,gt_box):
         boxes = pred_boxes.tensor.cpu()
         if gt_box is not None:
-            gt_box = torch.LongTensor([gt_box])
-            IoU = OPS.box_iou(boxes,gt_box)
-            gt_label = (IoU>0.3)
+            gt_box = torch.LongTensor([gt_box]).to(self.device)
+            gt_box = Boxes(gt_box)
+            # IoU = OPS.box_iou(boxes,gt_box)
+            IoU = pairwise_ioa(pred_boxes,gt_box)
+            gt_label = (IoU>0.5)
         else:
             gt_label = torch.BoolTensor([False]*boxes.shape[0])
         patches,vis_patches = self.make_patch(img,boxes.numpy())
