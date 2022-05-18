@@ -140,7 +140,7 @@ def crop_zeros(image):
     return image[np.min(y_nonzero):np.max(y_nonzero), np.min(x_nonzero):np.max(x_nonzero)]
 
 
-def vis_visit_landmark(query_object,path,controller,scenemap,landmark_config):
+def vis_visit_landmark(query_object,path,controller,scenemap,landmark_config,store=False):
     temp = copy.deepcopy(scenemap.grid_map)
     temp = np.ascontiguousarray(temp*255, dtype=np.uint8).copy()
     pos = controller.last_event.metadata['agent']['position']
@@ -177,4 +177,7 @@ def vis_visit_landmark(query_object,path,controller,scenemap,landmark_config):
     annot = np.asarray(cat_name).reshape(1,-1)
     sns.heatmap(img, cmap=cmap,annot=annot, fmt = '', cbar=False,annot_kws={"size": 9})
     ax.axis('off')
-    plt.show()
+    if store:
+        plt.savefig('./res/visit.png')
+    else:
+        plt.show()

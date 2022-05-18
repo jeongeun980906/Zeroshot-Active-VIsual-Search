@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
-landmark_names = ['Bed', 'DiningTable', 'StoveBurner', 'Toilet', 'Sink', 'Desk',
+landmark_names = ['Bed', 'DiningTable', 'StoveBurner', 'Toilet', 'Sink', 'Desk','Drawer'
                         'CounterTop','Television','Sofa','SideTable','CoffeeTable','ShelvingUnit','ArmChair']
 Word_Dict = {
     'Bed': 'bed', 'DiningTable': 'dining table', 'StoveBurner': 'stove', 'Toilet': 'toilet', 'Sink': 'sink',
-    'Desk': 'Desk', 'CounterTop':'kitchen table', 'Sofa':'sofa', 'Television':'television', 'SideTable':'table', 
-        'CoffeeTable':'round table','ShelvingUnit':'shelving','ArmChair':'arm chair'}
+    'Desk': 'Desk', 'CounterTop':'kitchen table', 'Sofa':'sofa', 'Television':'television','Drawer':'drawer',
+     'SideTable':'table', 'CoffeeTable':'round table','ShelvingUnit':'shelving','ArmChair':'arm chair'}
 def choose_ladmark(objects):
     landmarks = []
     for obj in objects:
@@ -17,11 +17,11 @@ def choose_ladmark(objects):
             cp = obj["position"]
             flag = True
             for l in landmarks:
-                if abs(l['cp']['x']-cp['x'])+ abs(l['cp']['z']-cp['z']) < 0.7: #and l['name']==obj['objectType']
+                if abs(l['cp']['x']-cp['x'])+ abs(l['cp']['z']-cp['z']) < 0.7 and l['name']==obj['objectType']:
                     flag = False
                     break
             if flag:
-                landmarks.append(dict(cp = cp, name=obj['objectType']))
+                landmarks.append(dict(cp = cp, name=obj['objectType'],ID = obj['objectId']))
             
     visible_landmark_name = []
     for l in landmarks:
@@ -37,13 +37,27 @@ def gather(controller,query_object,step = 4,angle = 180):
                     rot = controller.last_event.metadata['agent']['rotation'])]
     vis = check_visbility(controller.last_event,query_object)
     gt_boxes.append(get_gt_box(controller,query_object))
+    controller.step("LookDown")
+    pos.append(dict(pos = controller.last_event.metadata['agent']['position'], 
+                rot = controller.last_event.metadata['agent']['rotation']))
+    frames.append(controller.last_event.cv2img)
+    vis += check_visbility(controller.last_event,query_object)
+    gt_boxes.append(get_gt_box(controller,query_object))
+    controller.step("LookUp")
     for _ in range(step-1):
-        controller.step(action = "RotateRight", degrees = angle/step)
+        controller.step(action = "RotateRight", degrees = angle/(step-1))
         pos.append(dict(pos = controller.last_event.metadata['agent']['position'], 
                     rot = controller.last_event.metadata['agent']['rotation']))
         frames.append(controller.last_event.cv2img)
         vis += check_visbility(controller.last_event,query_object)
         gt_boxes.append(get_gt_box(controller,query_object))
+        controller.step("LookDown")
+        pos.append(dict(pos = controller.last_event.metadata['agent']['position'], 
+                    rot = controller.last_event.metadata['agent']['rotation']))
+        frames.append(controller.last_event.cv2img)
+        vis += check_visbility(controller.last_event,query_object)
+        gt_boxes.append(get_gt_box(controller,query_object))
+        controller.step("LookUp")
     return frames,pos,gt_boxes,vis
 
 def check_visbility(event,query_object):
@@ -59,7 +73,7 @@ def vis_panorama(frames,res=360):
     angle = res/col
     for e, frame in enumerate(frames):
         plt.subplot(1,col,e+1)
-        plt.title("{}".format(e*angle))
+        plt.title("{}".format(e))
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         plt.imshow(frame)
         plt.axis('off')

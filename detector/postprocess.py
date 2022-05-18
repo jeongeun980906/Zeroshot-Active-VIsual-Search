@@ -11,11 +11,13 @@ def postprocess(pred):
     scores = pred['scores']
     pred_classes = pred['pred_classes']
 
-    index = torch.where(scores>0.3)[0]
+    index = torch.where(scores>0.2)[0]
     pred_boxes = pred_boxes[index]
     pred_classes = pred_classes[index]
     scores = scores[index]
-    return pred_boxes,pred_classes
+
+    unk_only = (pred_classes == 20)
+    return pred_boxes,pred_classes, unk_only
 
 
 
@@ -43,7 +45,7 @@ def plot_openset(img,pred_boxes,pred_classes,CLASS_NAMES):
     plt.axis('off')
     plt.show()
 
-def plot_candidate(show_patches,show_points,new_query_object_name,scenemap):
+def plot_candidate(show_patches,show_points,new_query_object_name,scenemap,store=False,scene_name=None):
     size = len(show_patches)
     plt.figure(figsize=(3*size,5))
     plt.suptitle("Candidate Image of [{}]".format(new_query_object_name))
@@ -59,4 +61,7 @@ def plot_candidate(show_patches,show_points,new_query_object_name,scenemap):
         map = np.rot90(map)
         plt.imshow(map)
         plt.axis('off')
-    plt.show()
+    if store:
+        plt.savefig("./res/{}_{}.png".format(scene_name,new_query_object_name))
+    else:
+        plt.show()

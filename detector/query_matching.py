@@ -73,9 +73,9 @@ class matcher:
         if gt_box is not None:
             gt_box = torch.LongTensor([gt_box]).to(self.device)
             gt_box = Boxes(gt_box)
-            # IoU = OPS.box_iou(boxes,gt_box)
-            IoU = pairwise_ioa(pred_boxes,gt_box)
-            gt_label = (IoU>0.5)
+            IoU = pairwise_iou(pred_boxes,gt_box)
+            IoA = pairwise_ioa(pred_boxes,gt_box)
+            gt_label = (IoU>0.3) + (IoA>0.5)
         else:
             gt_label = torch.BoolTensor([False]*boxes.shape[0])
         patches,vis_patches = self.make_patch(img,boxes.numpy())
@@ -83,7 +83,7 @@ class matcher:
             return [],[],torch.BoolTensor([False])
         image_features = self.clip_model.encode_image(patches.to(self.device))
         dis = torch.matmul(self.text_features,image_features.T)
-        # print(dis)
+        print(dis)
         index = torch.where(dis>self.thres)[1].cpu()
         # print(gt_label,index)
         sucess = gt_label[index]

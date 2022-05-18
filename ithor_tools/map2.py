@@ -87,72 +87,55 @@ class single_scenemap():
             color = self.landmark_names.index(l['name'])
             self.grid_map[pos[0],pos[1],:] = self.landmark_colors(color)[:3]
 
-    def get_landmark_viewpoint(self,pos,landmark_name,controller):
+    def get_landmark_viewpoint(self,pos,landmark_ID,controller):
         ratio = 50
         [x,y] = self.xyz2grid(pos)
-        while ratio<200:
+        while ratio>20:
             size = int(self.stepsize*ratio)
             i = 1
             while i<20:
-                if self.grid_map[x+i,y,0]*self.grid_map[x-i,y,0]:
-                    if self.grid_map[x+i+size,y,0]:
-                        if self.check_visibility(self.grid2xyz([x+i+size,y],0.91), 270,controller,landmark_name):
-                            return self.grid2xyz([x+i+size,y],0.91), 270
-                    if self.grid_map[x-i-size,y,0]: 
-                        if self.check_visibility(self.grid2xyz([x-i-size,y],0.91), 90,controller,landmark_name):
-                            return self.grid2xyz([x-i-size,y],0.91), 90
-
-                if self.grid_map[x,y+i,0]*self.grid_map[x,y-i,0]:
-                    if self.grid_map[x,y+i+size,0]:
-                        if self.check_visibility(self.grid2xyz([x,y+i+size],0.91),180,controller,landmark_name):
-                            return self.grid2xyz([x,y+i+size],0.91), 180
-                    if self.grid_map[x,y-i-size,0]:
-                        if self.check_visibility(self.grid2xyz([x,y-i-size],0.91),0,controller,landmark_name):
-                            return self.grid2xyz([x,y-i-size],0.91), 0
-    
-
-                if self.grid_map[x+i,y,0] and self.grid_map[x+i+size,y,0]:
-                    if self.check_visibility(self.grid2xyz([x+i+size,y],0.91), 270,controller,landmark_name):
-                        return self.grid2xyz([x+i+size,y],0.91), 270
-                if self.grid_map[x-i,y,0] and self.grid_map[x-i-size,y,0]:
-                    if self.check_visibility(self.grid2xyz([x-i-size,y],0.91), 90,controller,landmark_name):
-                        return self.grid2xyz([x-i-size,y],0.91), 90
-                if self.grid_map[x,y+i,0] and self.grid_map[x,y+i+size,0]:
-                    if self.check_visibility(self.grid2xyz([x,y+size+i],0.91), 180,controller,landmark_name):
-                        return self.grid2xyz([x,y+i+size],0.91), 180
-                if self.grid_map[x,y-i,0] and self.grid_map[x,y-i-size,0]:
-                    if self.check_visibility(self.grid2xyz([x,y-i-size],0.91), 0,controller,landmark_name):
-                        return self.grid2xyz([x,y-i-size],0.91), 0
-
-                if self.grid_map[x-int(i/2),y-int(i/2),0] and self.grid_map[x-int(i/2+size/2),y-int(i/2+size/2),0]:
-                    if self.check_visibility(self.grid2xyz([x-int(i/2+size/2),y-int(i/2+size/2)],0.91), 45,controller,landmark_name):
-                        return self.grid2xyz([x-int(i/2+size/2),y-int(i/2+size/2)],0.91), 45
-                
-                if self.grid_map[x+int(i/2),y-int(i/2),0] and self.grid_map[x+int(i/2+size/2),y-int(i/2+size/2),0]:
-                    if self.check_visibility(self.grid2xyz([x+int(i/2+size/2),y-int(i/2+size/2)],0.91), 315,controller,landmark_name):
-                        return self.grid2xyz([x+int(i/2+size/2),y-int(i/2+size/2)],0.91), 315
-                
-                if self.grid_map[x+int(i/2),y+int(i/2),0] and self.grid_map[x+int(i/2+size/2),y+int(i/2+size/2),0]:
-                    if self.check_visibility(self.grid2xyz([x+int(i/2+size/2),y+int(i/2+size/2)],0.91), 225 ,controller,landmark_name):
-                        return self.grid2xyz([x+int(i/2+size/2),y+int(i/2+size/2)],0.91), 225
-
-                if self.grid_map[x-int(i/2),y+int(i/2),0] and self.grid_map[x-int(i/2+size/2),y+int(i/2+size/2),0]:
-                    if self.check_visibility(self.grid2xyz([x-int(i/2+size/2),y+int(i/2+size/2)],0.91), 135,controller,landmark_name):
-                        return self.grid2xyz([x-int(i/2+size/2),y+int(i/2+size/2)],0.91), 135
-
+                lpos,lrot = self.save_len(x,y,i,size,controller,landmark_ID)
+                if lrot == None:
+                    lpos,lrot = self.axis_algin(x,y,i,size,controller,landmark_ID)
+                    if lrot is not None:
+                        return lpos,lrot
+                else:
+                    return lpos,lrot
                 i+=1
-            ratio *= 2
-        print("No visible path")
-        return 
+            ratio /= 1.2
+        ratio = 70
+        while ratio>20:
+            size = int(self.stepsize*ratio)
+            i = 1
+            while i<20:
+                lpos,lrot = self.save_len(x,y,i,size,controller,landmark_ID)
+                if lrot == None:
+                    lpos,lrot = self.axis_algin(x,y,i,size,controller,landmark_ID)
+                    if lrot is not None:
+                        return lpos,lrot
+                else: 
+                    return lpos,lrot
+                if lrot == None:
+                    lpos,lrot = self.diagonal(x,y,i,size,controller,landmark_ID)
+                    if lrot is not None:
+                        return lpos,lrot
+                else:
+                    return lpos,lrot
+                i+=1
+            ratio /= 1.2
+        return lrot,lrot
 
-    def check_visibility(self,target_pos,target_rot,controller,landmark_name):
+    def check_visibility(self,target_pos,target_rot,controller,landmark_ID):
         cpos = controller.last_event.metadata['agent']['position']
         crot = controller.last_event.metadata['agent']['rotation']
-        controller.step("Teleport", position = target_pos, rotation =  target_rot
+        try:
+            controller.step("Teleport", position = target_pos, rotation =  target_rot
                                     )
+        except:
+            return False
         temp = controller.last_event.metadata['objects']
         for t in temp:
-            if t['objectType'] == landmark_name:
+            if t['objectId'] == landmark_ID:
                 # print(t['visible'])
                 if t['visible']:
                     controller.step("Teleport", position = cpos, rotation =  crot
@@ -201,3 +184,82 @@ class single_scenemap():
             rstate.append([w,h])
             
         self.rstate = rstate
+
+    def save_len(self,x,y,i,size,controller,landmark_ID):
+        try:
+            if self.grid_map[x+i,y,0]*self.grid_map[x-i,y,0]:
+                if self.grid_map[x+i+size,y,0]:
+                    if self.check_visibility(self.grid2xyz([x+i+size,y],0.91), 270,controller,landmark_ID):
+                        return self.grid2xyz([x+i+size,y],0.91), 270
+                if self.grid_map[x-i-size,y,0]: 
+                    if self.check_visibility(self.grid2xyz([x-i-size,y],0.91), 90,controller,landmark_ID):
+                        return self.grid2xyz([x-i-size,y],0.91), 90
+        except:
+            pass
+        try:
+            if self.grid_map[x,y+i,0]*self.grid_map[x,y-i,0]:
+                if self.grid_map[x,y+i+size,0]:
+                    if self.check_visibility(self.grid2xyz([x,y+i+size],0.91),180,controller,landmark_ID):
+                        return self.grid2xyz([x,y+i+size],0.91), 180
+                if self.grid_map[x,y-i-size,0]:
+                    if self.check_visibility(self.grid2xyz([x,y-i-size],0.91),0,controller,landmark_ID):
+                        return self.grid2xyz([x,y-i-size],0.91), 0
+        except:
+            pass
+
+        return False,None
+
+    def diagonal(self,x,y,i,size,controller,landmark_ID):
+        try:
+            if self.grid_map[x-int(i/2),y-int(i/2),0] and self.grid_map[x-int(i/2+size/2),y-int(i/2+size/2),0]:
+                if self.check_visibility(self.grid2xyz([x-int(i/2+size/2),y-int(i/2+size/2)],0.91), 45,controller,landmark_ID):
+                    return self.grid2xyz([x-int(i/2+size/2),y-int(i/2+size/2)],0.91), 45
+        except:
+            pass
+        try:
+            if self.grid_map[x+int(i/2),y-int(i/2),0] and self.grid_map[x+int(i/2+size/2),y-int(i/2+size/2),0]:
+                if self.check_visibility(self.grid2xyz([x+int(i/2+size/2),y-int(i/2+size/2)],0.91), 315,controller,landmark_ID):
+                    return self.grid2xyz([x+int(i/2+size/2),y-int(i/2+size/2)],0.91), 315
+        except:
+            pass
+        
+        try:
+            if self.grid_map[x+int(i/2),y+int(i/2),0] and self.grid_map[x+int(i/2+size/2),y+int(i/2+size/2),0]:
+                if self.check_visibility(self.grid2xyz([x+int(i/2+size/2),y+int(i/2+size/2)],0.91), 225 ,controller,landmark_ID):
+                    return self.grid2xyz([x+int(i/2+size/2),y+int(i/2+size/2)],0.91), 225
+        except:
+            pass
+        try:
+            if self.grid_map[x-int(i/2),y+int(i/2),0] and self.grid_map[x-int(i/2+size/2),y+int(i/2+size/2),0]:
+                if self.check_visibility(self.grid2xyz([x-int(i/2+size/2),y+int(i/2+size/2)],0.91), 135,controller,landmark_ID):
+                    return self.grid2xyz([x-int(i/2+size/2),y+int(i/2+size/2)],0.91), 135
+        except:
+            pass
+        return False,None
+
+    def axis_algin(self,x,y,i,size,controller,landmark_ID):
+        try:
+            if self.grid_map[x+i,y,0] and self.grid_map[x+i+size,y,0]:
+                if self.check_visibility(self.grid2xyz([x+i+size,y],0.91), 270,controller,landmark_ID):
+                    return self.grid2xyz([x+i+size,y],0.91), 270
+        except:
+            pass
+        try:
+            if self.grid_map[x-i,y,0] and self.grid_map[x-i-size,y,0]:
+                if self.check_visibility(self.grid2xyz([x-i-size,y],0.91), 90,controller,landmark_ID):
+                    return self.grid2xyz([x-i-size,y],0.91), 90
+        except:
+            pass
+        try:
+            if self.grid_map[x,y+i,0] and self.grid_map[x,y+i+size,0]:
+                if self.check_visibility(self.grid2xyz([x,y+size+i],0.91), 180,controller,landmark_ID):
+                    return self.grid2xyz([x,y+i+size],0.91), 180
+        except:
+            pass
+        try:
+            if self.grid_map[x,y-i,0] and self.grid_map[x,y-i-size,0]:
+                if self.check_visibility(self.grid2xyz([x,y-i-size],0.91), 0,controller,landmark_ID):
+                    return self.grid2xyz([x,y-i-size],0.91), 0
+        except:
+            pass
+        return False,None
