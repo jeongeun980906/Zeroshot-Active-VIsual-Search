@@ -2,6 +2,7 @@ from ai2thor.util.metrics import (
     get_shortest_path_to_point
 )
 import numpy as np
+from eval_ithor.reset import move_init
 import math
 
 def move_waypoint(controller,waypoint):
@@ -18,20 +19,20 @@ class co_occurance_based_schedular():
         self.landmarks = landmarks
         self.visible_landmark_name = visible_landmark_name
 
-    def get_graph(self,scenemap,controller,co_occurance_score,thres):
+    def get_node(self,scenemap,controller,co_occurance_score,thres):
         cpos = controller.last_event.metadata['agent']['position']
         node_info = [(cpos,0)]
         self.node = [-1]
         for e,score in enumerate(co_occurance_score):
             landmark_name = self.visible_landmark_name[e]
             if score>thres:
-                for l in self.landmarks:
+                for e,l in enumerate(self.landmarks):
                     if landmark_name == l['name']:
-                        goal_point,goal_rot = scenemap.get_landmark_viewpoint(l['cp'],l['ID'],controller)
+                        goal_point,goal_rot = scenemap.landmark_loi[e]
                         node_info.append([goal_point,goal_rot,score])
                         self.node.append(score)
         self.node_info = node_info
-        self.get_edge(controller)
+        
 
     def get_edge(self,controller):
         self.edge = np.zeros((len(self.node_info),len(self.node_info)))
@@ -47,12 +48,15 @@ class co_occurance_based_schedular():
         
 
     def shortest_path_length(self,controller,goal,init):
-        path = get_shortest_path_to_point(
-                controller=controller,
-                    target_position= goal,
-                    initial_position= init,
-                    allowed_error=0
-                )
+        try:
+            path = get_shortest_path_to_point(
+                    controller=controller,
+                        target_position= goal,
+                        initial_position= init,
+                        allowed_error=0.01
+                    )
+        except:
+            return 100
         distance = 0
         for e in range(len(path)-1):
             dx = abs(path[e]['x'] -  path[e+1]['x'])
@@ -63,7 +67,7 @@ class co_occurance_based_schedular():
     def optimize(self):
         index = [0]
         distance = self.edge
-        score = (1-np.asarray(self.node))/2
+        score = (1+1e-3-np.asarray(self.node))/2
         for i in range(1,len(self.node_info)):
             temp = np.arange(len(self.node_info))
             temp = np.delete(temp,index)

@@ -68,6 +68,7 @@ def load_detector(device='cuda:0',ID=19):
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 21
     cfg.INPUT.RANDOM_FLIP = "none"
     cfg.MODEL.ROI_HEADS.UNCT = True
+    cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.3
     cfg.PATH = '../faster_rcnn_rilab'
 
     # cfg.merge_from_list(args.opts)
@@ -87,26 +88,25 @@ def load_detector(device='cuda:0',ID=19):
     return predictor
 
 
-def get_min_dis(query_object,landmarks,objects,visible_landmark_name,controller,map,schedular):
+def get_min_dis(query_object,controller,map,schedular):
     gt_landmark_ID = query_object['parentReceptacles']
-    if gt_landmark_ID is not None:
-        for obj in objects:
-            if obj['objectId'] in gt_landmark_ID:
-                if obj['objectType'] in visible_landmark_name:
-                    min_loi = map.get_landmark_viewpoint(obj['position'],obj['objectId'],controller)
-                    cpos = controller.last_event.metadata['agent']['position']
-                    min_dis = schedular.shortest_path_length(controller,min_loi[0],cpos)
-                    return min_dis
+    for e,l in  enumerate(map.landmarks):
+        for ids in l['ID']:
+            if ids in gt_landmark_ID:
+                min_loi = map.landmark_loi[e]
+                cpos = controller.last_event.metadata['agent']['position']
+                min_dis = schedular.shortest_path_length(controller,min_loi[0],cpos)
+                return min_dis
     query_pos = query_object['position']
+    
     l_dis=[]
-    for l in landmarks:
+    for l in map.landmarks:
         l_pos = l['cp']
         dis = math.sqrt((query_pos['x']-l_pos['x'])**2+(query_pos['z']-l_pos['z'])**2)
         l_dis.append(dis)
     min_dis = min(l_dis)
     min_index = l_dis.index(min_dis)
-    min_loi = map.get_landmark_viewpoint(landmarks[min_index]['cp']
-                                ,landmarks[min_index]['ID'],controller)
+    min_loi = map.landmark_loi[min_index]
     cpos = controller.last_event.metadata['agent']['position']
     min_dis = schedular.shortest_path_length(controller,min_loi[0],cpos)
     return min_dis

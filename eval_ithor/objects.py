@@ -3,19 +3,19 @@ import torch
 from detector.postprocess import postprocess
 
 object_bed = [
-    'AlarmClock','Book', "Cellphone",'CreditCard',"KeyChain", "Mug", "Pen","Pillow",
+    'AlarmClock','Book', "CellPhone",'CreditCard',"KeyChain", "Mug", "Pen","Pillow",
     "TeddyBear","TissueBox"]
     
 object_kitchen = ['Book', 'Apple', 'Bowl', 'Bread','ButterKnife',"DishSponge"
                 ,"Fork","Knife","Mug","Pan","Toaster","PaperTowelRoll"]
 
-object_living_room = ['Book',"Cellphone",'CreditCard',"KeyChain","Pen",
+object_living_room = ['Book',"CellPhone",'CreditCard',"KeyChain","Pen",
                         "RemoteControl","TissueBox","Watch"]
 
 object_bath = ['HandTowel',"SoapBar","SprayBottle","TissueBox",
             "ToiletPaper","Towel"]
 
-total = object_bed+object_kitchen+object_living_room+object_bath
+total = list(set(object_bed+object_kitchen+object_living_room+object_bath))
 
 def get_obj_list(scene_type):
     if scene_type == 'all':

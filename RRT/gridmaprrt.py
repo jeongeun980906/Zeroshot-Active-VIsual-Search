@@ -403,7 +403,7 @@ class RRT:
                     )
                     if not event.metadata['lastActionSuccess']:
                         if verbose: print("Can not Teleport. Problem in {}th element".format(id))
-                        return False,None
+                        return False,total_path_len,None
                 # time.sleep(0.1)
 
                 frames.append(self.controller.last_event.third_party_camera_frames[0])
@@ -416,7 +416,7 @@ class RRT:
                 )
                 if not event.metadata['lastActionSuccess']:
                     if verbose: print("Can not Teleport. Problem in {}th element".format(id))
-                    return False,None
+                    return False,total_path_len,None
                 # time.sleep(0.1)
                 frames.append(self.controller.last_event.third_party_camera_frames[0])
 

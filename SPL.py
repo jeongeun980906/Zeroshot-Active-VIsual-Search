@@ -32,10 +32,11 @@ from detector.query_matching import matcher
 from RRT import gridmaprrt as rrt
 from RRT import gridmaprrt_pathsmoothing as smoothing
 
-device = 'cuda:0'
+device = 'cuda:1'
 co_thres = 0.6
 angle = 60
 step = 3
+# random.seed(10)
 ST = score_storage()
 
 kitchens = [f"FloorPlan{i}_physics" for i in range(1, 31)]
@@ -44,9 +45,11 @@ bedrooms = [f"FloorPlan{300 + i}_physics" for i in range(1, 31)]
 bathrooms = [f"FloorPlan{400 + i}_physics" for i in range(1, 31)]
 train = [f"FloorPlan_Train{i}_{j}" for i in range(1,12) for j in range(1,5)]
 
+# random.seed()
 scene_names = random.choices(train,k=10)
 print(scene_names)
-co_occurance_scoring = co_occurance_score('cuda:0')
+# scene_names = train
+co_occurance_scoring = co_occurance_score(device)
 '''
 Load Detector
 '''
@@ -65,9 +68,9 @@ for scene_name in scene_names:
         movementGaussianSigma=0,
         rotateStepDegrees=90,
         rotateGaussianSigma=0,
-        renderClassImage = True,
+        renderClassImage = False,
         renderDepthImage=False,
-        renderInstanceSegmentation=False,
+        renderInstanceSegmentation=True,
         width=300,
         height=300,
         fieldOfView=60
@@ -87,6 +90,8 @@ for scene_name in scene_names:
 
     sm = single_scenemap(scene_bounds,rstate,stepsize = 0.1,
                     landmark_names=visible_landmark_name,landmarks=landmarks)
+    sm.plot_landmarks(controller)
+
     landmark_config = dict(name=visible_landmark_name,color = sm.landmark_colors)
     d2w = depth2world()
     """"
@@ -111,10 +116,16 @@ for scene_name in scene_names:
         if max(res)<co_thres:
             co_thres = max(res)-0.1
         print(res,visible_landmark_name)
+
+        move_init(controller,rstate)
         schedular = co_occurance_based_schedular(landmarks,visible_landmark_name)
-        schedular.get_graph(sm,controller,res,co_thres)
+        schedular.get_node(sm,controller,res,co_thres)
+        move_init(controller,rstate)
+        schedular.get_edge(controller)
         path = schedular.optimize()
         vis_visit_landmark(query_object,path,controller,sm,landmark_config,store=True)
+        
+        move_init(controller,rstate)
         min_dis = get_min_dis(query_object,landmarks,objects,visible_landmark_name,controller,sm,schedular)
         total_patch = np.zeros((0,256,256,3),dtype=np.uint8)
         total_mappoints = []
@@ -127,7 +138,10 @@ for scene_name in scene_names:
             rrtplanner.set_start(pos)
             rrtplanner.set_goal(p[0])
             print("start planning")
-            local_path = rrtplanner.planning(animation=False)
+            try:
+                local_path = rrtplanner.planning(animation=False)
+            except:
+                break
             try:
                 smoothpath = smoothing.path_smoothing(rrtplanner,40,verbose=False)
             except:
@@ -150,7 +164,7 @@ for scene_name in scene_names:
             print("end move")
             # imshow_grid = sm.plot(pos,query_object['position'])
             # plot_frames(controller.last_event,imshow_grid,landmark_config)
-            frames, single_pos,gt_boxes,gt_vis = gather(controller,query_object['objectType'],step=step,angle=angle)
+            frames, single_pos,gt_boxes,gt_vis = gather(controller,[query_object['objectId']],step=step,angle=angle)
             print('gt_vis?',gt_vis)
             candidate_patches, candidate_map_points,sucesses = detect(frames,single_pos,gt_boxes,controller,predictor,query_matcher,d2w)
             total_patch = np.concatenate((total_patch,candidate_patches),axis=0)
@@ -166,8 +180,8 @@ for scene_name in scene_names:
         print("Total Path Length", total_path_len)
         if len(total_patch)>0:
             plot_candidate(total_patch,total_mappoints,query_object_name,sm,store=True,scene_name=scene_name)
-        SPL = (total_success>0)*min_dis/total_path_len
-        ST.append(SPL,query_object_name,'train')
+        SPL = (total_success>0)*min_dis/(total_path_len+1e-6)
+        ST.append(SPL,query_object_name,scene_name)
     controller.stop()
 df = ST.average()
 print(df)
