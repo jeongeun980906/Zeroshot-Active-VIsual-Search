@@ -126,7 +126,7 @@ for scene_name in scene_names:
         vis_visit_landmark(query_object,path,controller,sm,landmark_config,store=True)
         
         move_init(controller,rstate)
-        min_dis = get_min_dis(query_object,landmarks,objects,visible_landmark_name,controller,sm,schedular)
+        min_dis = get_min_dis(query_object,controller,sm,schedular)
         total_patch = np.zeros((0,256,256,3),dtype=np.uint8)
         total_mappoints = []
         total_success = 0
