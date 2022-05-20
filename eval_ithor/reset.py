@@ -68,7 +68,7 @@ def load_detector(device='cuda:0',ID=19):
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 21
     cfg.INPUT.RANDOM_FLIP = "none"
     cfg.MODEL.ROI_HEADS.UNCT = True
-    cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.3
+    cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.5
     cfg.PATH = '../faster_rcnn_rilab'
 
     # cfg.merge_from_list(args.opts)

@@ -46,7 +46,7 @@ def choose_ladmark(objects):
             visible_landmark_name.append(l['name'])
     return landmarks,visible_landmark_name
 
-def gather(controller,query_object,step = 4,angle = 180):
+def gather(controller,query_object,step = 4,angle = 180, show=False):
     frames = []
     gt_boxes = []
     frames.append(controller.last_event.cv2img)
@@ -80,7 +80,7 @@ def gather(controller,query_object,step = 4,angle = 180):
 def check_visbility(event,query_object):
     objs = event.metadata['objects']
     for obj in objs:
-        if obj['objectType'] == query_object and obj['visible']:
+        if obj['objectId'] == query_object[0] and obj['visible']:
             return True
     return False
 
@@ -96,7 +96,7 @@ def vis_panorama(frames,res=360):
         plt.axis('off')
     plt.show()
 
-def get_gt_box(controller,query_object_IDs):
+def get_gt_box(controller,query_object_IDs,show=False):
     instance_segmentation = controller.last_event.instance_segmentation_frame
     obj_colors = controller.last_event.object_id_to_color
     temp = np.zeros((instance_segmentation.shape[0],instance_segmentation.shape[1]))    
@@ -110,15 +110,15 @@ def get_gt_box(controller,query_object_IDs):
         temp[R[0],R[1]] += 1
         temp[G[0],G[1]] += 1
         temp[B[0],B[1]] += 1
-
-    # plt.figure()
-    # plt.subplot(1,2,1)
-    # plt.imshow(controller.last_event.frame)
-    # plt.axis('off')
-    # plt.subplot(1,2,2)
-    # plt.imshow(temp)
-    # plt.axis('off')
-    # plt.show()
+    if show:
+        plt.figure()
+        plt.subplot(1,2,1)
+        plt.imshow(controller.last_event.frame)
+        plt.axis('off')
+        plt.subplot(1,2,2)
+        plt.imshow(temp)
+        plt.axis('off')
+        plt.show()
 
     thres = np.max(temp)
     if thres < 3:
