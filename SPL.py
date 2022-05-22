@@ -114,7 +114,7 @@ for scene_name in scene_names:
         """
         res = co_occurance_scoring.score(query_object_name)
         if max(res)<co_thres:
-            co_thres = max(res)-0.1
+            co_thres = max(res)-0.2
         print(res,visible_landmark_name)
 
         move_init(controller,rstate)

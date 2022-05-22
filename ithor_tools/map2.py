@@ -1,8 +1,11 @@
+from xml.etree.ElementTree import PI
 from ithor_tools.landmark_utils import check_visbility
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
 from ithor_tools.landmark_utils import get_gt_box
+import math
+
 def giveMargintoGridmap(grid_map,wh_quan,margin_quan):
     ToGiveMargin = []
     print(margin_quan)
@@ -50,6 +53,7 @@ class single_scenemap():
         self.y_default = reachable_state[0]['y']
         w_quan = int(x_len//self.stepsize)+1
         h_quan = int(z_len//self.stepsize)+1
+        self.max_obj_size = 30
         
         self.w_quan = w_quan
         self.h_quan = h_quan
@@ -80,8 +84,9 @@ class single_scenemap():
         margin_quan = int(margin//self.stepsize)
         self.grid_map = giveMargintoGridmap(self.grid_map,(w_quan,h_quan), margin_quan)
         
-    def plot_landmarks(self,controller):
+    def plot_landmarks(self,controller,show=False):
         self.landmark_loi = []
+        self.show = show
         for l in self.landmarks:
             pos = self.xyz2grid(l['cp'])
             color = self.landmark_names.index(l['name'])
@@ -94,49 +99,34 @@ class single_scenemap():
     def get_landmark_viewpoint(self,pos,landmark_ID,controller):
         print(landmark_ID)
         [x,y] = self.xyz2grid(pos)
-        i = 1
-        while i<20:
-            lpos,lrot = self.save_len(x,y,i,controller,landmark_ID)
-            if lrot == None:
-                lpos,lrot = self.axis_algin(x,y,i,controller,landmark_ID)
-                if lrot is not None:
-                    return lpos,lrot
-            else:
-                return lpos,lrot
-            i+=1
-            # ratio /= 1.2
-        # ratio = 50
-        # while ratio>20:
-        #     size = int(self.stepsize*ratio)
-        i = 1
-        while i<20:
-            lpos,lrot = self.save_len(x,y,i,controller,landmark_ID)
-            if lrot == None:
-                lpos,lrot = self.axis_algin(x,y,i,controller,landmark_ID)
-                if lrot is not None:
-                    return lpos,lrot
-            else: 
-                return lpos,lrot
-            if lrot == None:
-                lpos,lrot = self.diagonal(x,y,i,controller,landmark_ID)
-                if lrot is not None:
-                    return lpos,lrot
-            else:
-                return lpos,lrot
-            i+=1
-        #     ratio /= 1.2
-        print("Path Not found")
-        # return lrot,lrot
+        pos_ = []
+        rot_ = []
+        cost_ = []
+        min_reachable = self.get_min_reachable_point(x,y)
+        for reachable_dict in min_reachable:
+            lpos,lrot, step_size = self.get_loi(x,y,reachable_dict,controller,landmark_ID)
+            if lpos != None:
+                step_size += reachable_dict['len']
+                pos_.append(lpos)
+                rot_.append(lrot)
+                cost_.append(step_size+ 10*(lrot%90 != 0 ))
+        if len(cost_) == 0:
+            print("Path Not found")
+        else:
+            print(pos_,rot_,cost_)
+            min_size = min(cost_)
+            min_index = cost_.index(min_size)
+            return pos_[min_index],rot_[min_index]
 
     def check_visibility(self,target_pos,target_rot,controller,landmark_name):
-        cpos = controller.last_event.metadata['agent']['position']
-        crot = controller.last_event.metadata['agent']['rotation']
+        # cpos = controller.last_event.metadata['agent']['position']
+        # crot = controller.last_event.metadata['agent']['rotation']
         try:
             controller.step("Teleport", position = target_pos, rotation =  target_rot
                                         )
         except:
             return 0
-        gt_box = get_gt_box(controller,landmark_name)
+        gt_box = get_gt_box(controller,landmark_name,self.show)
         
         if gt_box ==None:
             return False
@@ -144,7 +134,9 @@ class single_scenemap():
         frame = controller.last_event.frame
         area = frame.shape[0]*frame.shape[1]
         ratio = box_area/area
-        print(ratio)
+        # print(ratio)
+        if ratio<0.2 and ratio>0.05 and (gt_box[2]-gt_box[0])>0.7*frame.shape[0]:
+            return 0.21
         # controller.step("Teleport", position = cpos, rotation =  crot
         #             )
         # temp = controller.last_event.metadata['objects']
@@ -205,238 +197,59 @@ class single_scenemap():
             
         self.rstate = rstate
 
-    def save_len(self,x,y,i,controller,landmark_ID):
-        if x+i<self.grid_map.shape[0]-1 and x-i>0:
-            if self.grid_map[x+i,y,0]*self.grid_map[x-i,y,0]:
-                size = 100
-                while size>3:
-                    if x+i+size<self.grid_map.shape[0]-1:
-                        if self.grid_map[x+i+size,y,0]:
-                            ratio =  self.check_visibility(self.grid2xyz([x+i+size,y],0.91), 270,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x+i+size,y],0.91), 270
-                    if x-i-size>0:
-                        if self.grid_map[x-i-size,y,0]: 
-                            ratio =  self.check_visibility(self.grid2xyz([x-i-size,y],0.91), 90,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x-i-size,y],0.91), 90
-                    size -=4
+    def axis2rot(self,axis):
+        theta = math.atan2(axis[1],axis[0]) # [-180, 180]
+        theta = theta/math.pi*180
+        theta = 270-theta
+        if theta<0:
+            return theta+360
+        elif theta>380:
+            return theta-360
+        else:
+            return theta
 
-        if y+i<self.grid_map.shape[1]-1 and y-i>0:
-            if self.grid_map[x,y+i,0]*self.grid_map[x,y-i,0]:
-                size = 100
-                while size>3:
-                    if y+i+size<self.grid_map.shape[1]-1:
-                        if self.grid_map[x,y+i+size,0]:
-                            ratio =  self.check_visibility(self.grid2xyz([x,y+i+size],0.91),180,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x,y+i+size],0.91), 180
-                    if y-i-size>0:
-                        if self.grid_map[x,y-i-size,0]:
-                            ratio = self.check_visibility(self.grid2xyz([x,y-i-size],0.91),0,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x,y-i-size],0.91), 0
-                    size -=4
+    def get_min_reachable_point(self,x,y):
+        res = []
+        total_axis = [[0,1],[1,0],[0,-1],[-1,0],[1/2,1/2],[-1/2,1/2],[-1/2,-1/2],[1/2,-1/2]]
+        for axis in total_axis:
+            i = self.check_reachable(x,y,axis)
+            if i != None:
+                res.append(dict(len = i, axis = axis))
+        print(res)
+        return res
 
-        return False,None
+    def check_reachable(self,x,y,axis):
+        for i in range(1,self.max_obj_size):
+            step = [int(x+axis[0]*i),int(y+axis[1]*i)] 
+            if step[0]<self.grid_map.shape[0]-1 and step[0]>0 and step[1]>0 and step[1]<self.grid_map.shape[1]-1:
+                if self.grid_map[step[0],step[1],0]:
+                    return i
+        return None
 
-    def diagonal(self,x,y,i,controller,landmark_ID):
-        if x-int(i/2)>0 and y-int(i/2)>0:
-            if self.grid_map[x-int(i/2),y-int(i/2),0]:
-                size = 100
-                prev_ratio = 0
-                downflag = 0
-                upflag = 0
-                while size>3:
-                    if x-int(i/2+size/2)>0 and y-int(i/2+size/2)>0:
-                        if self.grid_map[x-int(i/2+size/2),y-int(i/2+size/2),0]:
-                            ratio =  self.check_visibility(self.grid2xyz([x-int(i/2+size/2),y-int(i/2+size/2)],0.91), 45,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x-int(i/2+size/2),y-int(i/2+size/2)],0.91), 45
-                            elif ratio>prev_ratio:
-                                upflag += 1
-                            elif ratio<prev_ratio:
-                                downflag +=1
+    def get_loi(self,x,y,reachable_dict,controller,landmark_ID):
+        i = reachable_dict['len']
+        axis = reachable_dict['axis']
+        pos = [int(x+axis[0]*i),int(y+axis[1]*i)] 
+        rot = self.axis2rot(axis)
+        size = 50
+        max_ratio = 0
+        max_size = 0
+        while size>0:
+            new_pos = [int(pos[0]+axis[0]*size),int(pos[1]+axis[1]*size)]
+            if new_pos[0]>0 and new_pos[0]<self.grid_map.shape[0]-1 and new_pos[1]>0 and new_pos[1]<self.grid_map.shape[1]-1:
+                if self.grid_map[new_pos[0],new_pos[1],0]:
+                    ratio =  self.check_visibility(self.grid2xyz(new_pos,0.91), rot,controller,landmark_ID)
+                    if ratio>0.2 and ratio<0.8:
+                        return self.grid2xyz(new_pos,0.91), rot, size
+                    
+                    # Heuristic return max ratio if nothing is found
+                    if max_ratio<ratio:
+                        max_size = size
+                        max_ratio = ratio
+            size -= 4
 
-                            if downflag>0 and upflag>0:
-                                size += 4
-                                return self.grid2xyz([x-int(i/2+size/2),y-int(i/2+size/2)],0.91), 45
-
-                            prev_ratio = ratio
-                                
-                    size -=4
-
-        if x+int(i/2)<self.grid_map.shape[0]-1  and y-int(i/2)>0:
-            if self.grid_map[x+int(i/2),y-int(i/2),0]:
-                size = 100
-                prev_ratio = 0
-                downflag = 0
-                upflag = 0
-                while size>3:
-                    if x+int(i/2+size/2)<self.grid_map.shape[0]-1  and y-int(i/2+size/2)>0:
-                        if self.grid_map[x+int(i/2+size/2),y-int(i/2+size/2),0]:
-                            ratio =  self.check_visibility(self.grid2xyz([x+int(i/2+size/2),y-int(i/2+size/2)],0.91), 315,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x+int(i/2+size/2),y-int(i/2+size/2)],0.91), 315
-                            elif ratio>prev_ratio:
-                                upflag += 1
-                            elif ratio<prev_ratio:
-                                downflag +=1
-
-                            if downflag>0 and upflag>0:
-                                size += 4
-                                return self.grid2xyz([x+int(i/2+size/2),y-int(i/2+size/2)],0.91), 315
-
-                            prev_ratio = ratio
-                                
-                    size -=4
-
-        if x+int(i/2)< self.grid_map.shape[0]-1 and y+int(i/2)<self.grid_map.shape[1]-1:
-            if self.grid_map[x+int(i/2),y+int(i/2),0]:
-                size = 100
-                prev_ratio = 0
-                downflag = 0
-                upflag = 0
-                while size>3:
-                    if x+int(i/2+size/2)< self.grid_map.shape[0]-1 and y+int(i/2+size/2)<self.grid_map.shape[1]-1:
-                        if self.grid_map[x+int(i/2+size/2),y+int(i/2+size/2),0]:
-                            ratio =  self.check_visibility(self.grid2xyz([x+int(i/2+size/2),y+int(i/2+size/2)],0.91), 225 ,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x+int(i/2+size/2),y+int(i/2+size/2)],0.91), 225
-                            elif ratio>prev_ratio:
-                                upflag += 1
-                            elif ratio<prev_ratio:
-                                downflag +=1
-
-                            if downflag>0 and upflag>0:
-                                size += 4
-                                return self.grid2xyz([x+int(i/2+size/2),y+int(i/2+size/2)],0.91), 225
-
-                            prev_ratio = ratio
-                                
-                                
-                    size -=4
-                size = 50
-          
-        if x-int(i/2)>0 and y+int(i/2)<self.grid_map.shape[1]-1 :
-            if self.grid_map[x-int(i/2),y+int(i/2),0]:
-                size = 100
-                prev_ratio = 0
-                downflag = 0
-                upflag = 0
-                while size>3:
-                    if x-int(i/2+size/2)>0 and y+int(i/2+size/2)<self.grid_map.shape[1]-1:
-                        if self.grid_map[x-int(i/2+size/2),y+int(i/2+size/2),0]:
-                            ratio = self.check_visibility(self.grid2xyz([x-int(i/2+size/2),y+int(i/2+size/2)],0.91), 135,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x-int(i/2+size/2),y+int(i/2+size/2)],0.91), 135
-                            elif ratio>prev_ratio:
-                                upflag += 1
-                            elif ratio<prev_ratio:
-                                downflag +=1
-
-                            if downflag>0 and upflag>0:
-                                size += 4
-                                return self.grid2xyz([x-int(i/2+size/2),y+int(i/2+size/2)],0.91), 135
-
-                            prev_ratio = ratio
-                                
-                    size -=4
-        return False,None
-
-    def axis_algin(self,x,y,i,controller,landmark_ID):
-        if x+i<self.grid_map.shape[0]-1:
-            if self.grid_map[x+i,y,0]:
-                size = 100
-                prev_ratio = 0
-                downflag = 0
-                upflag = 0
-                while size>3:
-                    if x+i+size<self.grid_map.shape[0]-1:
-                        if self.grid_map[x+i+size,y,0]:
-                            ratio =  self.check_visibility(self.grid2xyz([x+i+size,y],0.91), 270,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x+i+size,y],0.91), 270
-                            elif ratio>prev_ratio:
-                                upflag += 1
-                            elif ratio<prev_ratio:
-                                downflag +=1
-
-                            if downflag>0 and upflag>0:
-                                size += 4
-                                return self.grid2xyz([x+i+size,y],0.91), 270
-
-                            prev_ratio = ratio
-                    size -=4
-                
-        if x-i>0:
-            if self.grid_map[x-i,y,0]:
-                size = 100
-                prev_ratio = 0
-                downflag = 0
-                upflag = 0
-                while size>3:
-                    if x-i-size>0:
-                        if self.grid_map[x-i-size,y,0]:
-                            ratio = self.check_visibility(self.grid2xyz([x-i-size,y],0.91), 90,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x-i-size,y],0.91), 90
-                            elif ratio>prev_ratio:
-                                upflag += 1
-                            elif ratio<prev_ratio:
-                                downflag +=1
-
-                            if downflag>0 and upflag>0:
-                                size += 4
-                                return self.grid2xyz([x-i-size,y],0.91), 90
-                            prev_ratio = ratio
-                    size-=4
-
-
-        if y+i<self.grid_map.shape[1]-1:
-            if self.grid_map[x,y+i,0]:
-                size = 100
-                prev_ratio = 0
-                downflag = 0
-                upflag = 0
-                while size>3:
-                    if y+i+size<self.grid_map.shape[1]-1:
-                        if self.grid_map[x,y+i+size,0]:
-                            ratio =  self.check_visibility(self.grid2xyz([x,y+size+i],0.91), 180,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x,y+i+size],0.91), 180
-                            elif ratio>prev_ratio:
-                                upflag += 1
-                            elif ratio<prev_ratio:
-                                downflag +=1
-
-                            if downflag>0 and upflag>0:
-                                size += 4
-                                return self.grid2xyz([x,y+i+size],0.91), 180
-                            prev_ratio = ratio
-                    size-=4
-                        
-        if y-i>0:
-            if self.grid_map[x,y-i,0]:
-                size = 100
-                prev_ratio = 0
-                downflag = 0
-                upflag = 0
-                while size>3:
-                    if y-i-size>0:
-                        if self.grid_map[x,y-i-size,0]:
-                            ratio =  self.check_visibility(self.grid2xyz([x,y-i-size],0.91), 0,controller,landmark_ID)
-                            if ratio>0.2 and ratio<0.8:
-                                return self.grid2xyz([x,y-i-size],0.91), 0
-                            elif ratio>prev_ratio:
-                                upflag += 1
-                            elif ratio<prev_ratio:
-                                downflag +=1
-
-                            if downflag>0 and upflag>0:
-                                size += 4
-                                return self.grid2xyz([x,y-i-size],0.91), 0
-                            prev_ratio = ratio
-                    size-=4
-
-        return False,None
+        if max_ratio>0.1:
+            new_pos = [int(pos[0]+axis[0]*max_size),int(pos[1]+axis[1]*max_size)]
+            return self.grid2xyz(new_pos,0.91), rot,size
+        else:
+            return None,None, None

@@ -5,11 +5,11 @@ import numpy as np
 import cv2
 
 landmark_names = ['Bed', 'DiningTable', 'StoveBurner', 'Toilet', 'Sink', 'Desk','Drawer','Shelf',
-                        'CounterTop','Television','Sofa','SideTable','CoffeeTable','ShelvingUnit','ArmChair']
+                        'CounterTop','Television','Sofa','SideTable','CoffeeTable','ShelvingUnit','ArmChair','TVStand']
 Word_Dict = {
     'Bed': 'bed', 'DiningTable': 'dining table', 'StoveBurner': 'stove', 'Toilet': 'toilet', 'Sink': 'sink',
     'Desk': 'Desk', 'CounterTop':'kitchen table', 'Sofa':'sofa', 'Television':'television','Drawer':'drawer',
-     'SideTable':'table', 'CoffeeTable':'round table','ShelvingUnit':'shelving','ArmChair':'arm chair',
+     'SideTable':'table', 'CoffeeTable':'round table','ShelvingUnit':'shelving','ArmChair':'arm chair','TVStand':'tv stand',
      'Shelf':'shelf'}
 
 def choose_ladmark(objects):
@@ -17,6 +17,7 @@ def choose_ladmark(objects):
     temp_ln = copy.deepcopy(landmark_names)
     temp_ln.remove('Shelf')
     temp_ln.remove("Drawer")
+    temp_ln.remove("TVStand")
     for obj in objects:
         if obj['objectType'] in temp_ln:
             cp = obj["position"]
@@ -30,14 +31,17 @@ def choose_ladmark(objects):
                 landmarks.append(dict(cp = cp, name=obj['objectType'],ID = [obj['objectId']]))
             
     for obj in objects:
-        if obj['objectType'] == 'Shelf' or obj['objectType'] =='Drawer':
+        if obj['objectType'] == 'Shelf' or obj['objectType'] =='Drawer' or obj['objectType'] == 'TVStand':
             cp = obj["position"]
             flag = True
             for l in landmarks:
-                if abs(l['cp']['x']-cp['x'])+ abs(l['cp']['z']-cp['z']) < 0.7: 
-                    l['ID'].append(obj['objectId'])
+                if abs(l['cp']['x']-cp['x'])+ abs(l['cp']['z']-cp['z']) < 0.7:
+                    if obj['objectType'] == 'TVStand':
+                        if l['name'] == 'DiningTable': 
+                            l['ID'].append(obj['objectId'])
+                    else:
+                        l['ID'].append(obj['objectId'])
                     flag = False
-                    break
             if flag:
                 landmarks.append(dict(cp = cp, name=obj['objectType'],ID = [obj['objectId']]))
     visible_landmark_name = []
