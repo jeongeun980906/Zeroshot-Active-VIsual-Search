@@ -9,7 +9,7 @@ object_bed = [
 object_kitchen = ['Book', 'Apple', 'Bowl', 'Bread','ButterKnife',"DishSponge"
                 ,"Fork","Knife","Mug","Pan","Toaster","PaperTowelRoll"]
 
-object_living_room = ['Book',"CellPhone",'CreditCard',"KeyChain","Pen",
+object_living_room = ['Book',"CellPhone",'CreditCard',"KeyChain","Pen","Vase",
                         "RemoteControl","TissueBox","Watch"]
 
 object_bath = ['HandTowel',"SoapBar","SprayBottle","TissueBox",

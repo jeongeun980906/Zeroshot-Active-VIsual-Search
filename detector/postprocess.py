@@ -52,7 +52,10 @@ def plot_candidate(show_patches,show_points,new_query_object_name,scenemap,store
     for e, (patch,point) in enumerate(zip(show_patches,show_points)):
         map = scenemap.grid_map.copy()
         new_grid = scenemap.xyz2grid(point)
-        map[new_grid[0],new_grid[1],:] = [1,0.5,1]
+        try:
+            map[new_grid[0],new_grid[1],:] = [1,0.5,1]
+        except:
+            pass
         plt.subplot(2,size,e+1)
         plt.imshow(patch)
         plt.axis('off')

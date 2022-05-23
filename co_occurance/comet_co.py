@@ -1,5 +1,6 @@
 import spacy
 from co_occurance.generate import Comet
+from gensim.models import KeyedVectors
 
 class co_occurance_score():
     def __init__(self,device):
@@ -39,4 +40,29 @@ class co_occurance_score():
 
                 sims.append(doc1.similarity(doc2))
             res.append(round(max(sims),3))
+        return res
+
+
+class co_occurance_score_base():
+    def __init__(self):
+        '''
+        Word2Vec
+        '''
+        # Load vectors directly from the file
+        self.model = KeyedVectors.load_word2vec_format('data/GoogleGoogleNews-vectors-negative300.bin', binary=True)
+    def landmark_init(self,landmark_cat):
+        self.landmark_cat = landmark_cat
+    
+    def score(self,query_object_name):
+        new_query_object_name = ''
+
+        for i, letter in enumerate(query_object_name):
+            if i and letter.isupper():
+                new_query_object_name += ' '
+            new_query_object_name += letter.lower()
+
+        res = []
+        for l in self.landmark_cat:
+            sim = self.model.similarity(l,new_query_object_name)
+            res.append(round(max(sim),3))
         return res

@@ -28,9 +28,12 @@ class co_occurance_based_schedular():
             if score>thres:
                 for e,l in enumerate(self.landmarks):
                     if landmark_name == l['name']:
-                        goal_point,goal_rot = scenemap.landmark_loi[e]
-                        node_info.append([goal_point,goal_rot,score])
-                        self.node.append(score)
+                        lois = scenemap.landmark_loi[e]
+                        for loi in lois:
+                            goal_point = loi[0]
+                            goal_rot = loi[1]
+                            node_info.append([goal_point,goal_rot,score])
+                            self.node.append(score)
         self.node_info = node_info
         
 

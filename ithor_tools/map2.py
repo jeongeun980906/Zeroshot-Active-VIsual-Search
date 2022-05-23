@@ -34,11 +34,12 @@ def giveMargintoGridmap(grid_map,wh_quan,margin_quan):
 
 class single_scenemap():
     def __init__(self,scenebound, reachable_state, landmark_names,landmarks,
-                                stepsize=0.25, margin=0):
+                                stepsize=0.25, margin=0, num_loi = 2):
         scenebound = np.asarray(scenebound)
         x_max, z_max = np.max(scenebound,axis=0)
         x_min, z_min  = np.min(scenebound,axis=0)
         print(x_min,x_max,z_min,z_max)
+        self.num_loi = num_loi
         self.stepsize = stepsize
         x_max = self.stepsize* (x_max//self.stepsize)
         z_max = self.stepsize* (z_max//self.stepsize)
@@ -53,7 +54,7 @@ class single_scenemap():
         self.y_default = reachable_state[0]['y']
         w_quan = int(x_len//self.stepsize)+1
         h_quan = int(z_len//self.stepsize)+1
-        self.max_obj_size = 30
+        self.max_obj_size = 20
         
         self.w_quan = w_quan
         self.h_quan = h_quan
@@ -86,15 +87,21 @@ class single_scenemap():
         
     def plot_landmarks(self,controller,show=False):
         self.landmark_loi = []
+        self.landmark_loi_name = []
         self.show = show
         for l in self.landmarks:
             pos = self.xyz2grid(l['cp'])
             color = self.landmark_names.index(l['name'])
-            loi = self.get_landmark_viewpoint(l['cp'],l['ID'],controller) # World cordinates
-            self.landmark_loi.append(loi)
-            loi_grid = self.xyz2grid(loi[0])
+            lois = self.get_landmark_viewpoint(l['cp'],l['ID'],controller) # World cordinates
+            self.landmark_loi.append(lois)
+            self.landmark_loi_name.extend([l['name']] *len(lois))
+            print(lois)
+            for loi in lois:
+                loi_grid= self.xyz2grid(loi[0])
+                self.grid_map[loi_grid[0],loi_grid[1],:] = self.landmark_colors(color)[:3]
+
             self.grid_map[pos[0],pos[1],:] = self.landmark_colors(color)[:3]
-            self.grid_map[loi_grid[0],loi_grid[1],:] = self.landmark_colors(color)[:3]
+            
 
     def get_landmark_viewpoint(self,pos,landmark_ID,controller):
         print(landmark_ID)
@@ -113,10 +120,23 @@ class single_scenemap():
         if len(cost_) == 0:
             print("Path Not found")
         else:
-            print(pos_,rot_,cost_)
-            min_size = min(cost_)
-            min_index = cost_.index(min_size)
-            return pos_[min_index],rot_[min_index]
+            temp = copy.deepcopy(cost_)
+            temp.sort()
+            sorted_pos = []
+            sorted_rot = []
+            for t in temp:
+                min_index = cost_.index(t)
+                sorted_pos.append(pos_[min_index])
+                sorted_rot.append(rot_[min_index])
+
+            if self.num_loi == 0: # Record all
+                return [[sorted_pos[i],sorted_rot[i]] for i in range(len(temp))]
+
+            if len(temp)>1 and self.num_loi == 2:
+                return [[sorted_pos[i],sorted_rot[i]] for i in range(2)]
+           
+            else:
+                return [[sorted_pos[0],sorted_rot[0]]]
 
     def check_visibility(self,target_pos,target_rot,controller,landmark_name):
         # cpos = controller.last_event.metadata['agent']['position']
@@ -136,6 +156,8 @@ class single_scenemap():
         ratio = box_area/area
         # print(ratio)
         if ratio<0.2 and ratio>0.05 and (gt_box[2]-gt_box[0])>0.7*frame.shape[0]:
+            return 0.21
+        if ratio<0.2 and ratio>0.05 and gt_box[1]>2:
             return 0.21
         # controller.step("Teleport", position = cpos, rotation =  crot
         #             )
@@ -231,7 +253,7 @@ class single_scenemap():
         axis = reachable_dict['axis']
         pos = [int(x+axis[0]*i),int(y+axis[1]*i)] 
         rot = self.axis2rot(axis)
-        size = 50
+        size = 10
         max_ratio = 0
         max_size = 0
         while size>0:
@@ -246,7 +268,7 @@ class single_scenemap():
                     if max_ratio<ratio:
                         max_size = size
                         max_ratio = ratio
-            size -= 4
+            size -= 2
 
         if max_ratio>0.1:
             new_pos = [int(pos[0]+axis[0]*max_size),int(pos[1]+axis[1]*max_size)]

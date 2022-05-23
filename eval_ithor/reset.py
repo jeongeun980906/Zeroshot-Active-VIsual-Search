@@ -88,15 +88,53 @@ def load_detector(device='cuda:0',ID=19):
     return predictor
 
 
+def load_detector_base(device='cuda:0'):
+    '''
+    config file: VOC trained only
+    '''
+    cfg = get_cfg()
+    cfg.merge_from_file('../faster_rcnn_rilab/config_files/voc.yaml')
+    cfg.MODEL.SAVE_IDX=2
+    cfg.MODEL.RPN.USE_MDN=False
+    cfg.log = False 
+    cfg.MODEL.ROI_HEADS.USE_MLN = False
+    cfg.MODEL.ROI_HEADS.AUTO_LABEL = False
+    cfg.MODEL.ROI_HEADS.AF = 'baseline'
+    cfg.MODEL.RPN.AUTO_LABEL = False
+    cfg.MODEL.ROI_BOX_HEAD.USE_FD = False
+    cfg.MODEL.RPN.AUTO_LABEL_TYPE = 'sum'
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 20
+    cfg.INPUT.RANDOM_FLIP = "none"
+    cfg.MODEL.ROI_HEADS.UNCT = False
+    cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.3
+    cfg.PATH = '../faster_rcnn_rilab'
+
+    # cfg.merge_from_list(args.opts)
+    RPN_NAME = 'mdn' if cfg.MODEL.RPN.USE_MDN else 'base'
+    ROI_NAME = 'mln' if cfg.MODEL.ROI_HEADS.USE_MLN else 'base'
+    MODEL_NAME = RPN_NAME + ROI_NAME
+    # cfg.merge_from_list(args.opts)
+    cfg.freeze()
+    # wandb.init(config=cfg,tags= 'temp',name = 'temp',project='temp')
+
+    model = GeneralizedRCNN(cfg,device = device).to(device)
+    state_dict = torch.load('../faster_rcnn_rilab/ckpt/{}/{}_{}_15000.pt'.format(cfg.MODEL.ROI_HEADS.AF,cfg.MODEL.SAVE_IDX,MODEL_NAME),map_location=device)
+    pretrained_dict = {k: v for k, v in state_dict.items() if k in model.state_dict()}
+    model.load_state_dict(pretrained_dict)
+
+    predictor = DefaultPredictor(cfg,model)
+    return predictor
+
 def get_min_dis(query_object,controller,map,schedular):
     gt_landmark_ID = query_object['parentReceptacles']
-    for e,l in  enumerate(map.landmarks):
-        for ids in l['ID']:
-            if ids in gt_landmark_ID:
-                min_loi = map.landmark_loi[e]
-                cpos = controller.last_event.metadata['agent']['position']
-                min_dis = schedular.shortest_path_length(controller,min_loi[0],cpos)
-                return min_dis
+    if gt_landmark_ID != None:
+        for e,l in  enumerate(map.landmarks):
+            for ids in l['ID']:
+                if ids in gt_landmark_ID:
+                    min_loi = map.landmark_loi[e][0]
+                    cpos = controller.last_event.metadata['agent']['position']
+                    min_dis = schedular.shortest_path_length(controller,min_loi[0],cpos)
+                    return min_dis
     query_pos = query_object['position']
     
     l_dis=[]
@@ -106,7 +144,7 @@ def get_min_dis(query_object,controller,map,schedular):
         l_dis.append(dis)
     min_dis = min(l_dis)
     min_index = l_dis.index(min_dis)
-    min_loi = map.landmark_loi[min_index]
+    min_loi = map.landmark_loi[min_index][0]
     cpos = controller.last_event.metadata['agent']['position']
     min_dis = schedular.shortest_path_length(controller,min_loi[0],cpos)
     return min_dis
