@@ -2,8 +2,8 @@
 
 ## Setup
 ```
-mkdir ai2-detection
-cd ai2-detection
+mkdir thor-detection
+cd thor-detection
 git clone https://github.com/jeongeun980906/ITHOR_Navi
 cd ITHOR_NAVI
 mkdir res
@@ -30,7 +30,7 @@ Change to
 # importing sys
 import sys
 # adding Folder_2 to the system path
-sys.path.insert(0, '[your path]/ai2-detection/Open-Set-Detection')
+sys.path.insert(0, '[your path]/thor-detection/Open-Set-Detection')
 ```
 
 and also config files on DEMO.ipynb and reset.py
