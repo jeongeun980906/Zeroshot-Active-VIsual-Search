@@ -44,7 +44,6 @@ einops==0.4.1
 en-core-web-md @ https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.3.0/en_core_web_md-3.3.0-py3-none-any.whl
 entrypoints==0.4
 executing==0.8.3
-faster-rcnn==0.0.0
 fastjsonschema==2.15.3
 filelock==3.6.0
 Flask==2.1.1
