@@ -15,9 +15,10 @@ def move_waypoint(controller,waypoint):
 
 
 class co_occurance_based_schedular():
-    def __init__(self,landmarks,visible_landmark_name):
+    def __init__(self,landmarks,visible_landmark_name,num_loi=2):
         self.landmarks = landmarks
         self.visible_landmark_name = visible_landmark_name
+        self.num_loi = num_loi
 
     def get_node(self,scenemap,controller,co_occurance_score,thres):
         cpos = controller.last_event.metadata['agent']['position']
@@ -29,7 +30,16 @@ class co_occurance_based_schedular():
                 for e,l in enumerate(self.landmarks):
                     if landmark_name == l['name']:
                         lois = scenemap.landmark_loi[e]
-                        for loi in lois:
+                        if self.num_loi ==0: # Based on Co occurance score
+                            if score>0.9:
+                                num_loi = 3  
+                            elif score>0.7:
+                                num_loi = 2
+                            else:
+                                num_loi = 1
+                        else:
+                            num_loi = self.num_loi if len(lois)>self.num_loi else len(lois)
+                        for loi in lois[:num_loi]:
                             goal_point = loi[0]
                             goal_rot = loi[1]
                             node_info.append([goal_point,goal_rot,score])

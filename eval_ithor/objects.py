@@ -6,10 +6,10 @@ object_bed = [
     'AlarmClock','Book', "CellPhone",'CreditCard',"KeyChain", "Mug", "Pen","Pillow",
     "TeddyBear","TissueBox"]
     
-object_kitchen = ['Book', 'Apple', 'Bowl', 'Bread','ButterKnife',"DishSponge"
-                ,"Fork","Knife","Mug","Pan","Toaster","PaperTowelRoll"]
+object_kitchen = ['Book', 'Apple', 'Bread', "DishSponge" ,"Kettle","Pot","PepperShaker",
+                "Mug","Pan","Toaster","PaperTowelRoll"]
 
-object_living_room = ['Book',"CellPhone",'CreditCard',"KeyChain","Pen","Vase",
+object_living_room = ['Book',"CellPhone",'CreditCard',"KeyChain","Pen",
                         "RemoteControl","TissueBox","Watch"]
 
 object_bath = ['HandTowel',"SoapBar","SprayBottle","TissueBox",
@@ -40,7 +40,7 @@ def choose_query_objects(objects,scene_type='all'):
     return query_objects
 
 
-def detect(frames,single_pos,gt_boxes,controller,predictor,matcher,d2w):
+def detect(frames,single_pos,gt_boxes,controller,predictor,matcher,d2w,unk_only_flag=True):
     patch = np.zeros((0,256,256,3),dtype=np.uint8)
     map_p = []
     sucesses = 0
@@ -48,7 +48,9 @@ def detect(frames,single_pos,gt_boxes,controller,predictor,matcher,d2w):
         pred = predictor(frame)
         pred_boxes, pred_classes,unk_only = postprocess(pred)
         # plot_openset(frame,pred_boxes,pred_classes,VOC_CLASS_NAMES)
-        show_patch,candidate_boxes,sucess = matcher.matching_score(frame,pred_boxes[unk_only],gt_box)
+        if unk_only_flag:
+            pred_boxes = pred_boxes[unk_only]
+        show_patch,candidate_boxes,sucess = matcher.matching_score(frame,pred_boxes,gt_box)
         sucesses += torch.sum(sucess).item()
         if len(show_patch):
             DEPTH = controller.last_event.depth_frame

@@ -34,12 +34,11 @@ def giveMargintoGridmap(grid_map,wh_quan,margin_quan):
 
 class single_scenemap():
     def __init__(self,scenebound, reachable_state, landmark_names,landmarks,
-                                stepsize=0.25, margin=0, num_loi = 2):
+                                stepsize=0.25, margin=0, vis_loi = False):
         scenebound = np.asarray(scenebound)
         x_max, z_max = np.max(scenebound,axis=0)
         x_min, z_min  = np.min(scenebound,axis=0)
         print(x_min,x_max,z_min,z_max)
-        self.num_loi = num_loi
         self.stepsize = stepsize
         x_max = self.stepsize* (x_max//self.stepsize)
         z_max = self.stepsize* (z_max//self.stepsize)
@@ -55,7 +54,8 @@ class single_scenemap():
         w_quan = int(x_len//self.stepsize)+1
         h_quan = int(z_len//self.stepsize)+1
         self.max_obj_size = 20
-        
+
+        self.vis_loi = vis_loi
         self.w_quan = w_quan
         self.h_quan = h_quan
         
@@ -98,7 +98,8 @@ class single_scenemap():
             print(lois)
             for loi in lois:
                 loi_grid= self.xyz2grid(loi[0])
-                self.grid_map[loi_grid[0],loi_grid[1],:] = self.landmark_colors(color)[:3]
+                if self.vis_loi:
+                    self.grid_map[loi_grid[0],loi_grid[1],:] = self.landmark_colors(color)[:3]
 
             self.grid_map[pos[0],pos[1],:] = self.landmark_colors(color)[:3]
             
@@ -128,15 +129,15 @@ class single_scenemap():
                 min_index = cost_.index(t)
                 sorted_pos.append(pos_[min_index])
                 sorted_rot.append(rot_[min_index])
+            return [[sorted_pos[i],sorted_rot[i]] for i in range(len(temp))]
+            # if self.num_loi == 0: # Record all
+            #     return [[sorted_pos[i],sorted_rot[i]] for i in range(len(temp))]
 
-            if self.num_loi == 0: # Record all
-                return [[sorted_pos[i],sorted_rot[i]] for i in range(len(temp))]
-
-            if len(temp)>1 and self.num_loi == 2:
-                return [[sorted_pos[i],sorted_rot[i]] for i in range(2)]
+            # if len(temp)>1 and self.num_loi == 2:
+            #     return [[sorted_pos[i],sorted_rot[i]] for i in range(2)]
            
-            else:
-                return [[sorted_pos[0],sorted_rot[0]]]
+            # else:
+            #     return [[sorted_pos[0],sorted_rot[0]]]
 
     def check_visibility(self,target_pos,target_rot,controller,landmark_name):
         # cpos = controller.last_event.metadata['agent']['position']

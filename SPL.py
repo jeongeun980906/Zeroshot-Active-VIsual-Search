@@ -55,7 +55,7 @@ def get_scene(args):
     
 
 def main(args):
-    co_thres = args.co_thres
+    
     angle = 60
     step = 3
     # random.seed(10)
@@ -63,10 +63,10 @@ def main(args):
 
     # random.seed()
     device = 'cuda:{}'.format(args.gpu)
-    # scene_names = get_scene(args)
-    # scene_names = random.choices(train,k=10)
-    # print(scene_names)
-    scene_names = ['FloorPlan_Train1_2']
+    scene_names = get_scene(args)
+    scene_names = random.choices(train,k=10)
+    print(scene_names)
+    # scene_names = ['FloorPlan_Train1_2']
     # scene_names = train
     '''
     Load co occurance measure
@@ -80,8 +80,10 @@ def main(args):
     '''
     if args.base_detector:
         predictor = load_detector_base(device=device)
+        unk_only_flag = False
     else:
         predictor = load_detector(device=device,ID=args.detector_id)
+        unk_only_flag = False
 
     for scene_name in scene_names:
         print(scene_name)
@@ -117,7 +119,7 @@ def main(args):
         scene_bounds = cornerpoint_projection(scene_bounds)
 
         sm = single_scenemap(scene_bounds,rstate,stepsize = 0.1,
-                        landmark_names=visible_landmark_name,landmarks=landmarks,num_loi = args.num_loi)
+                        landmark_names=visible_landmark_name,landmarks=landmarks)
         sm.plot_landmarks(controller)
 
         landmark_config = dict(name=visible_landmark_name,color = sm.landmark_colors)
@@ -140,13 +142,14 @@ def main(args):
             """
             co occurance score
             """
+            co_thres = args.co_thres
             res = co_occurance_scoring.score(query_object_name)
-            if max(res)<co_thres:
+            if max(res)<co_thres + 0.2:
                 co_thres = max(res)-0.2
             print(res,visible_landmark_name)
 
             move_init(controller,rstate)
-            schedular = co_occurance_based_schedular(landmarks,visible_landmark_name)
+            schedular = co_occurance_based_schedular(landmarks,visible_landmark_name,num_loi = args.num_loi)
             schedular.get_node(sm,controller,res,co_thres)
             move_init(controller,rstate)
             schedular.get_edge(controller)
@@ -194,7 +197,7 @@ def main(args):
                 # plot_frames(controller.last_event,imshow_grid,landmark_config)
                 frames, single_pos,gt_boxes,gt_vis = gather(controller,[query_object['objectId']],step=step,angle=angle)
                 print('gt_vis?',gt_vis)
-                candidate_patches, candidate_map_points,sucesses = detect(frames,single_pos,gt_boxes,controller,predictor,query_matcher,d2w)
+                candidate_patches, candidate_map_points,sucesses = detect(frames,single_pos,gt_boxes,controller,predictor,query_matcher,d2w,unk_only_flag=unk_only_flag)
                 total_patch = np.concatenate((total_patch,candidate_patches),axis=0)
                 total_mappoints += candidate_map_points
                 total_success += sucesses
@@ -204,7 +207,7 @@ def main(args):
                     # total_patch = np.concatenate(total_patch,axis=0)
                     # print(total_patch.shape,)
                     break
-                if len(total_patch)>10 and p[-1]<0.9:
+                if len(total_patch)>10 and p[-1]<0.7:
                     break
             print("Sucess?",total_success>0)
             print("Total Path Length", total_path_len)
@@ -228,7 +231,7 @@ if __name__ == '__main__':
 
     # Co occurance measure setup
     parser.add_argument('--co_base',action='store_true' ,default=False,help='co occurance as word2vec')
-    parser.add_argument('--co_thres',default = 0.6, type=float,help='co occurance threshold')
+    parser.add_argument('--co_thres',default = 0.4, type=float,help='co occurance threshold')
 
     # CLIP setup
     parser.add_argument('--clip_thres',default = 29, type=float,help='clip threshold')

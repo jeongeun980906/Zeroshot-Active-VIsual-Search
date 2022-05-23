@@ -16,8 +16,6 @@ class co_occurance_score():
         self.landmark_cat = landmark_cat
 
     def score(self,query_object_name):
-        queries = []
-
         new_query_object_name = ''
 
         for i, letter in enumerate(query_object_name):
@@ -26,9 +24,10 @@ class co_occurance_score():
             new_query_object_name += letter.lower()
 
         head = "A {}".format(new_query_object_name).lower()
-        rel = "AtLocation"
-        query = "{} {} [GEN]".format(head, rel)
-        queries.append(query)
+        rel = ["AtLocation","LocatedNear"]
+        query_1 = "{} {} [GEN]".format(head, rel[0])
+        # query_2 = "{} {} [GEN]".format(head, rel[1])
+        queries = [query_1]#, query_2]
         results = self.comet.generate(queries, decode_method="beam", num_generate=20)
         print(results)
         res = []
@@ -37,8 +36,11 @@ class co_occurance_score():
             for r in results[0]:
                 doc1 = self.nlp(r)
                 doc2 = self.nlp(l)
-
                 sims.append(doc1.similarity(doc2))
+            # for r in results[1]:
+            #     doc1 = self.nlp(r)
+            #     doc2 = self.nlp(l)
+                # sims.append(doc1.similarity(doc2))
             res.append(round(max(sims),3))
         return res
 

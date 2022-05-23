@@ -9,7 +9,7 @@ landmark_names = ['Bed', 'DiningTable', 'StoveBurner', 'Toilet', 'Sink', 'Desk',
 Word_Dict = {
     'Bed': 'bed', 'DiningTable': 'dining table', 'StoveBurner': 'stove', 'Toilet': 'toilet', 'Sink': 'sink',
     'Desk': 'Desk', 'CounterTop':'kitchen table', 'Sofa':'sofa', 'Television':'television','Drawer':'drawer',
-     'SideTable':'table', 'CoffeeTable':'round table','ShelvingUnit':'shelving','ArmChair':'arm chair','TVStand':'tv stand',
+     'SideTable':'side table', 'CoffeeTable':'coffee table','ShelvingUnit':'shelving unit','ArmChair':'arm chair','TVStand':'tv stand',
      'Shelf':'shelf'}
 
 def choose_ladmark(objects):
