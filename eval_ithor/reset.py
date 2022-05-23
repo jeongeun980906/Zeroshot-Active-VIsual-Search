@@ -2,7 +2,7 @@
 import sys
 
 # adding Folder_2 to the system path
-sys.path.insert(0, '/home/jeongeun/faster_rcnn_rilab')
+sys.path.insert(0, '/home/jeongeun/test_env/Open-Set-Object-Detection')
 
 # Detector module
 from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
@@ -55,7 +55,7 @@ def load_detector(device='cuda:0',ID=19):
     config file
     '''
     cfg = get_cfg()
-    cfg.merge_from_file('../faster_rcnn_rilab/config_files/voc.yaml')
+    cfg.merge_from_file('../Open-Set-Object-Detection/config_files/voc.yaml')
     cfg.MODEL.SAVE_IDX=ID
     cfg.MODEL.RPN.USE_MDN=False
     cfg.log = False 
@@ -69,7 +69,7 @@ def load_detector(device='cuda:0',ID=19):
     cfg.INPUT.RANDOM_FLIP = "none"
     cfg.MODEL.ROI_HEADS.UNCT = True
     cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.3
-    cfg.PATH = '../faster_rcnn_rilab'
+    cfg.PATH = '../Open-Set-Object-Detection'
 
     # cfg.merge_from_list(args.opts)
     RPN_NAME = 'mdn' if cfg.MODEL.RPN.USE_MDN else 'base'
@@ -80,7 +80,7 @@ def load_detector(device='cuda:0',ID=19):
     # wandb.init(config=cfg,tags= 'temp',name = 'temp',project='temp')
 
     model = GeneralizedRCNN(cfg,device = device).to(device)
-    state_dict = torch.load('../faster_rcnn_rilab/ckpt/{}/{}_{}_15000.pt'.format(cfg.MODEL.ROI_HEADS.AF,cfg.MODEL.SAVE_IDX,MODEL_NAME),map_location=device)
+    state_dict = torch.load('../Open-Set-Object-Detection/ckpt/{}/{}_{}_15000.pt'.format(cfg.MODEL.ROI_HEADS.AF,cfg.MODEL.SAVE_IDX,MODEL_NAME),map_location=device)
     pretrained_dict = {k: v for k, v in state_dict.items() if k in model.state_dict()}
     model.load_state_dict(pretrained_dict)
 
@@ -93,7 +93,7 @@ def load_detector_base(device='cuda:0'):
     config file: VOC trained only
     '''
     cfg = get_cfg()
-    cfg.merge_from_file('../faster_rcnn_rilab/config_files/voc.yaml')
+    cfg.merge_from_file('../Open-Set-Object-Detection/config_files/voc.yaml')
     cfg.MODEL.SAVE_IDX=2
     cfg.MODEL.RPN.USE_MDN=False
     cfg.log = False 
@@ -107,7 +107,7 @@ def load_detector_base(device='cuda:0'):
     cfg.INPUT.RANDOM_FLIP = "none"
     cfg.MODEL.ROI_HEADS.UNCT = False
     cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.3
-    cfg.PATH = '../faster_rcnn_rilab'
+    cfg.PATH = '../Open-Set-Object-Detection'
 
     # cfg.merge_from_list(args.opts)
     RPN_NAME = 'mdn' if cfg.MODEL.RPN.USE_MDN else 'base'
@@ -118,7 +118,7 @@ def load_detector_base(device='cuda:0'):
     # wandb.init(config=cfg,tags= 'temp',name = 'temp',project='temp')
 
     model = GeneralizedRCNN(cfg,device = device).to(device)
-    state_dict = torch.load('../faster_rcnn_rilab/ckpt/{}/{}_{}_15000.pt'.format(cfg.MODEL.ROI_HEADS.AF,cfg.MODEL.SAVE_IDX,MODEL_NAME),map_location=device)
+    state_dict = torch.load('../Open-Set-Object-Detection/ckpt/{}/{}_{}_15000.pt'.format(cfg.MODEL.ROI_HEADS.AF,cfg.MODEL.SAVE_IDX,MODEL_NAME),map_location=device)
     pretrained_dict = {k: v for k, v in state_dict.items() if k in model.state_dict()}
     model.load_state_dict(pretrained_dict)
 

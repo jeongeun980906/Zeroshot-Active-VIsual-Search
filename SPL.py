@@ -63,9 +63,10 @@ def main(args):
 
     # random.seed()
     device = 'cuda:{}'.format(args.gpu)
-    scene_names = get_scene(args)
-    scene_names = random.choices(train,k=10)
-    print(scene_names)
+    # scene_names = get_scene(args)
+    # scene_names = random.choices(train,k=10)
+    # print(scene_names)
+    scene_names = ['FloorPlan_Train1_2']
     # scene_names = train
     '''
     Load co occurance measure

@@ -16,7 +16,8 @@ python setup.py install
 ```
 
 ### Detector Module
-[URL](https://github.com/jeongeun980906/Open-Set-Object-Detection)
+
+Please get pretrained checkpoints on this repository [URL](https://github.com/jeongeun980906/Open-Set-Object-Detection).
 
 ### Co occurance Module
 Please look at README.md on co_occurance folder! 
