@@ -37,7 +37,6 @@ debugpy==1.6.0
 decorator==4.4.2
 defusedxml==0.7.1
 deprecation==2.1.0
--e git+https://github.com/facebookresearch/detectron2.git@2bd05b42983468c50a1c80d5e7dc3952980e1cd4#egg=detectron2
 dill==0.3.4
 dm-tree==0.1.7
 docker-pycreds==0.4.0
