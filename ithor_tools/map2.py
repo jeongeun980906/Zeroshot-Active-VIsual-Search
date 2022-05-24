@@ -113,6 +113,7 @@ class single_scenemap():
         min_reachable = self.get_min_reachable_point(x,y)
         for reachable_dict in min_reachable:
             lpos,lrot, step_size = self.get_loi(x,y,reachable_dict,controller,landmark_ID)
+            # print(lrot)
             if lpos != None:
                 step_size += reachable_dict['len']
                 pos_.append(lpos)
@@ -146,7 +147,11 @@ class single_scenemap():
             controller.step("Teleport", position = target_pos, rotation =  target_rot
                                         )
         except:
-            return 0
+            return False
+
+        if controller.last_event.metadata['lastActionSuccess'] == False:
+            return False
+
         gt_box = get_gt_box(controller,landmark_name,self.show)
         
         if gt_box ==None:
@@ -238,7 +243,7 @@ class single_scenemap():
             i = self.check_reachable(x,y,axis)
             if i != None:
                 res.append(dict(len = i, axis = axis))
-        print(res)
+        # print(res)
         return res
 
     def check_reachable(self,x,y,axis):
@@ -262,6 +267,7 @@ class single_scenemap():
             if new_pos[0]>0 and new_pos[0]<self.grid_map.shape[0]-1 and new_pos[1]>0 and new_pos[1]<self.grid_map.shape[1]-1:
                 if self.grid_map[new_pos[0],new_pos[1],0]:
                     ratio =  self.check_visibility(self.grid2xyz(new_pos,0.91), rot,controller,landmark_ID)
+                    # print(ratio)
                     if ratio>0.2 and ratio<0.8:
                         return self.grid2xyz(new_pos,0.91), rot, size
                     

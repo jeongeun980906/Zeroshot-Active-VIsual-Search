@@ -108,12 +108,11 @@ def get_gt_box(controller,query_object_IDs,show=False):
         query_color = obj_colors[query_object_ID]
         
         # print(controller.last_event.object_id_to_color)
-        R = np.where(instance_segmentation[:,:,0]==query_color[0])
-        G = np.where(instance_segmentation[:,:,1]==query_color[1])
-        B = np.where(instance_segmentation[:,:,2]==query_color[2])
-        temp[R[0],R[1]] += 1
-        temp[G[0],G[1]] += 1
-        temp[B[0],B[1]] += 1
+        R = (instance_segmentation[:,:,0]==query_color[0])
+        G = (instance_segmentation[:,:,1]==query_color[1])
+        B = (instance_segmentation[:,:,2]==query_color[2])
+        total = R & G & B
+        temp[total] = +1
     if show:
         plt.figure()
         plt.subplot(1,2,1)
@@ -124,10 +123,10 @@ def get_gt_box(controller,query_object_IDs,show=False):
         plt.axis('off')
         plt.show()
 
-    thres = np.max(temp)
-    if thres < 3:
-        thres = 3
-    temp = np.where(temp==thres)
+    # thres = np.max(temp)
+    # if thres < 3:
+    #     thres = 3
+    temp = np.where(temp>=1)
     try:
         GT_box = [min(temp[1]),min(temp[0]),max(temp[1]),max(temp[0])]
         return GT_box
