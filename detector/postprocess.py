@@ -45,26 +45,28 @@ def plot_openset(img,pred_boxes,pred_classes,CLASS_NAMES):
     plt.axis('off')
     plt.show()
 
-def plot_candidate(show_patches,show_points,new_query_object_name,scenemap,store=False,scene_name=None):
+def plot_candidate(show_patches,show_points,new_query_object_name,scenemap,store=False,scene_name=None,args=None):
     size = len(show_patches)
     plt.figure(figsize=(3*size,5))
     plt.suptitle("Candidate Image of [{}]".format(new_query_object_name))
-    for e, (patch,point) in enumerate(zip(show_patches,show_points)):
-        map = scenemap.grid_map.copy()
-        new_grid = scenemap.xyz2grid(point)
-        try:
-            map[new_grid[0],new_grid[1],:] = [1,0.5,1]
-        except:
-            pass
-        plt.subplot(2,size,e+1)
-        plt.imshow(patch)
-        plt.axis('off')
+    if len(show_patches)<70:
+        for e, (patch,point) in enumerate(zip(show_patches,show_points)):
+            map = scenemap.grid_map.copy()
+            new_grid = scenemap.xyz2grid(point)
+            try:
+                map[new_grid[0],new_grid[1],:] = [1,0.5,1]
+            except:
+                pass
+            plt.subplot(2,size,e+1)
+            plt.imshow(patch)
+            plt.axis('off')
 
-        plt.subplot(2,size,e+size+1)
-        map = np.rot90(map)
-        plt.imshow(map)
-        plt.axis('off')
-    if store:
-        plt.savefig("./res/{}_{}.png".format(scene_name,new_query_object_name))
-    else:
-        plt.show()
+            plt.subplot(2,size,e+size+1)
+            map = np.rot90(map)
+            plt.imshow(map)
+            plt.axis('off')
+        if store:
+            file_path = './res/%d_%d_%d'%(args.base_detector,args.co_base,args.num_loi)
+            plt.savefig("{}/{}_{}.png".format(file_path,scene_name,new_query_object_name))
+        else:
+            plt.show()

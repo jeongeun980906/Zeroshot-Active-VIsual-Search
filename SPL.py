@@ -59,12 +59,16 @@ def main(args):
     angle = 60
     step = 3
     # random.seed(10)
-    ST = score_storage()
+    ST = score_storage(args)
+    if args.resume:
+        ST.load_json()
 
     # random.seed()
     device = 'cuda:{}'.format(args.gpu)
-    scene_names = get_scene(args)
-    scene_names = random.choices(train,k=10)
+    # scene_names = get_scene(args)
+    # scene_names = random.choices(train,k=10)
+    scene_names = ['FloorPlan_Train8_1','FloorPlan_Train1_4','FloorPlan_Train1_2', 'FloorPlan_Train4_1','FloorPlan_Train3_2',
+               'FloorPlan_Train9_1','FloorPlan_Train8_2','FloorPlan_Train10_4','FloorPlan_Train5_3', 'FloorPlan_Train2_2']
     print(scene_names)
     # scene_names = ['FloorPlan_Train1_2']
     # scene_names = train
@@ -73,6 +77,8 @@ def main(args):
     '''
     if args.co_base:
         co_occurance_scoring = co_occurance_score_base()
+    elif args.dis_only:
+        co_occurance_scoring = None
     else:
         co_occurance_scoring = co_occurance_score(device)
     '''
@@ -143,9 +149,13 @@ def main(args):
             co occurance score
             """
             co_thres = args.co_thres
-            res = co_occurance_scoring.score(query_object_name)
-            if max(res)<co_thres + 0.2:
-                co_thres = max(res)-0.2
+            if args.dis_only:
+                res = [0]*len(visible_landmark_name)
+                co_thres = -1
+            else:
+                res = co_occurance_scoring.score(query_object_name)
+                if max(res)<co_thres + 0.2:
+                    co_thres = max(res)-0.2
             print(res,visible_landmark_name)
 
             move_init(controller,rstate)
@@ -207,21 +217,27 @@ def main(args):
                     # total_patch = np.concatenate(total_patch,axis=0)
                     # print(total_patch.shape,)
                     break
-                if len(total_patch)>10 and p[-1]<0.7:
+                # if len(total_patch)>100:
+                #     break
+                if len(total_patch)>30 and p[-1]<0.7:
                     break
             print("Sucess?",total_success>0)
             print("Total Path Length", total_path_len)
             if len(total_patch)>0:
-                plot_candidate(total_patch,total_mappoints,query_object_name,sm,store=True,scene_name=scene_name)
+                plot_candidate(total_patch,total_mappoints,query_object_name,sm,store=True,scene_name=scene_name,args=args)
+            
             SPL = (total_success>0)*min_dis/(total_path_len+1e-6)
             ST.append(SPL,query_object_name,scene_name)
+            del total_patch
         controller.stop()
+        ST.save_json()
     df = ST.average()
     print(df)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--resume',action='store_true' ,default=False,help='Resume from json file')
     parser.add_argument('--gpu',default = 1, type=int,help='gpu setup')
     parser.add_argument('--scene',default='all',choices=['all','bed','kitchen','living_room','bath'],help='type of scene')
     
@@ -231,6 +247,7 @@ if __name__ == '__main__':
 
     # Co occurance measure setup
     parser.add_argument('--co_base',action='store_true' ,default=False,help='co occurance as word2vec')
+    parser.add_argument('--dis_only',action='store_true' ,default=False,help='no co-occurance')
     parser.add_argument('--co_thres',default = 0.4, type=float,help='co occurance threshold')
 
     # CLIP setup

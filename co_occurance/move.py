@@ -24,21 +24,26 @@ class co_occurance_based_schedular():
         cpos = controller.last_event.metadata['agent']['position']
         node_info = [(cpos,0)]
         self.node = [-1]
+        max_score = max(co_occurance_score)
+        if max_score<0.6:
+            num_loi_c = [max_score-0.05,thres-0.15]
+        else:
+            num_loi_c = [0.8,0.6]
         for e,score in enumerate(co_occurance_score):
             landmark_name = self.visible_landmark_name[e]
             if score>thres:
                 for e,l in enumerate(self.landmarks):
                     if landmark_name == l['name']:
                         lois = scenemap.landmark_loi[e]
-                        if self.num_loi ==0: # Based on Co occurance score
-                            if score>0.9:
-                                num_loi = 3  
-                            elif score>0.7:
-                                num_loi = 2
+                        if self.num_loi == 0: # Based on Co occurance score
+                            if score>num_loi_c[0]:
+                                num_loi = 3 if len(lois)>2 else len(lois)
+                            elif score>num_loi_c[1]:
+                                num_loi = 2 if len(lois)>1 else len(lois)
                             else:
                                 num_loi = 1
                         else:
-                            num_loi = self.num_loi if len(lois)>self.num_loi else len(lois)
+                            num_loi = self.num_loi if len(lois)>self.num_loi-1 else len(lois)
                         for loi in lois[:num_loi]:
                             goal_point = loi[0]
                             goal_rot = loi[1]

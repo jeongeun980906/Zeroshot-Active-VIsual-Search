@@ -25,10 +25,13 @@ class matcher:
 
     def tokenize_query(self,query_object_name):
         new_query_object_name = ''
-        for i, letter in enumerate(query_object_name):
-            if i and letter.isupper():
-                new_query_object_name += ' '
-            new_query_object_name += letter.lower()
+        if len(query_object_name)>2:
+            for i, letter in enumerate(query_object_name):
+                if i and letter.isupper():
+                    new_query_object_name += ' '
+                new_query_object_name += letter.lower()
+        else:
+            new_query_object_name = query_object_name
 
         text = clip.tokenize(["a photo of a {}".format(new_query_object_name)]).to(self.device)
         self.text_features = self.clip_model.encode_text(text)
