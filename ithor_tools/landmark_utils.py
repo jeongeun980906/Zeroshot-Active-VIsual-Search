@@ -53,31 +53,36 @@ def choose_ladmark(objects):
 def gather(controller,query_object,step = 4,angle = 180, show=False):
     frames = []
     gt_boxes = []
+    vis = 0
     frames.append(controller.last_event.cv2img)
     pos = [dict(pos = controller.last_event.metadata['agent']['position'], 
                     rot = controller.last_event.metadata['agent']['rotation'])]
-    vis = check_visbility(controller.last_event,query_object)
-    gt_boxes.append(get_gt_box(controller,query_object))
+    gt_box = get_gt_box(controller,query_object,version=2)
+    gt_boxes.append(gt_box)
+    vis += 1 if gt_box != None else 0
     controller.step("LookDown")
     pos.append(dict(pos = controller.last_event.metadata['agent']['position'], 
                 rot = controller.last_event.metadata['agent']['rotation']))
     frames.append(controller.last_event.cv2img)
-    vis += check_visbility(controller.last_event,query_object)
-    gt_boxes.append(get_gt_box(controller,query_object))
+    gt_box = get_gt_box(controller,query_object,version=2)
+    gt_boxes.append(gt_box)
+    vis += 1 if gt_box != None else 0
     controller.step("LookUp")
     for _ in range(step-1):
         controller.step(action = "RotateRight", degrees = angle/(step-1))
         pos.append(dict(pos = controller.last_event.metadata['agent']['position'], 
                     rot = controller.last_event.metadata['agent']['rotation']))
         frames.append(controller.last_event.cv2img)
-        vis += check_visbility(controller.last_event,query_object)
-        gt_boxes.append(get_gt_box(controller,query_object))
+        gt_box = get_gt_box(controller,query_object,version=2)
+        gt_boxes.append(gt_box)
+        vis += 1 if gt_box != None else 0
         controller.step("LookDown")
         pos.append(dict(pos = controller.last_event.metadata['agent']['position'], 
                     rot = controller.last_event.metadata['agent']['rotation']))
         frames.append(controller.last_event.cv2img)
-        vis += check_visbility(controller.last_event,query_object)
-        gt_boxes.append(get_gt_box(controller,query_object))
+        gt_box = get_gt_box(controller,query_object,version=2)
+        gt_boxes.append(gt_box)
+        vis += 1 if gt_box != None else 0
         controller.step("LookUp")
     return frames,pos,gt_boxes,vis
 
@@ -100,7 +105,7 @@ def vis_panorama(frames,res=360):
         plt.axis('off')
     plt.show()
 
-def get_gt_box(controller,query_object_IDs,show=False):
+def get_gt_box(controller,query_object_IDs,show=False,version=1):
     instance_segmentation = controller.last_event.instance_segmentation_frame
     obj_colors = controller.last_event.object_id_to_color
     temp = np.zeros((instance_segmentation.shape[0],instance_segmentation.shape[1]))    
@@ -129,10 +134,16 @@ def get_gt_box(controller,query_object_IDs,show=False):
     temp = np.where(temp>=1)
     try:
         GT_box = [min(temp[1]),min(temp[0]),max(temp[1]),max(temp[0])]
-        return GT_box
+        area = (GT_box[2]-GT_box[0])*(GT_box[3]-GT_box[1])
+        # print(area/((instance_segmentation.shape[0]*instance_segmentation.shape[1])))
+        thres = 1e-3 if version==1 else 1e-3
+        if area>thres*(instance_segmentation.shape[0]*instance_segmentation.shape[1]):
+            return GT_box
+        else:
+            return None
     except:
         return None
     # plt.imshow(instance_segmentation)
     # plt.axis('off')
     # plt.show()
-    
+

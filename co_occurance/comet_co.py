@@ -31,7 +31,7 @@ class co_occurance_score():
         # query_2 = "{} {} [GEN]".format(head, rel[1])
         queries = [query_1]#, query_2]
         results = self.comet.generate(queries, decode_method="beam", num_generate=20)
-        print(results)
+        # print(results)
         res = []
         for l in self.landmark_cat:
             sims = []
@@ -45,7 +45,6 @@ class co_occurance_score():
                 # sims.append(doc1.similarity(doc2))
             res.append(round(max(sims),3))
         return res
-
 
 class co_occurance_score_base():
     def __init__(self):

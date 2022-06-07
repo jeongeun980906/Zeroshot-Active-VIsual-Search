@@ -66,7 +66,16 @@ def plot_candidate(show_patches,show_points,new_query_object_name,scenemap,store
             plt.imshow(map)
             plt.axis('off')
         if store:
-            file_path = './res/%d_%d_%d'%(args.base_detector,args.co_base,args.num_loi)
+            if args.co_base:
+                num = 1
+            elif args.dis_only:
+                num =2 
+            else :
+                num=0
+            if args.val:
+                file_path = './res/val_%d_%d_%d'%(args.base_detector,num,args.num_loi)
+            else:      
+                file_path = './res/%d_%d_%d'%(args.base_detector,num,args.num_loi)
             plt.savefig("{}/{}_{}.png".format(file_path,scene_name,new_query_object_name))
         else:
             plt.show()

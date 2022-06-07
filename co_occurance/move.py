@@ -10,25 +10,26 @@ def move_waypoint(controller,waypoint):
                     position = waypoint[0], rotation = dict(x=0,y=waypoint[1],z=0))
     pos = controller.last_event.metadata['agent']['position']
     pos = [pos['x'],pos['z']]
-    print(controller.last_event.metadata['lastActionSuccess'])
+    # print(controller.last_event.metadata['lastActionSuccess'])
     return pos
 
 
 class co_occurance_based_schedular():
-    def __init__(self,landmarks,visible_landmark_name,num_loi=2):
+    def __init__(self,landmarks,visible_landmark_name,num_loi=2,co_base=False):
         self.landmarks = landmarks
         self.visible_landmark_name = visible_landmark_name
         self.num_loi = num_loi
+        self.ratio = 10 if co_base else 3 #5
 
     def get_node(self,scenemap,controller,co_occurance_score,thres):
         cpos = controller.last_event.metadata['agent']['position']
         node_info = [(cpos,0)]
         self.node = [-1]
         max_score = max(co_occurance_score)
-        if max_score<0.6:
-            num_loi_c = [max_score-0.05,thres-0.15]
+        if max_score<0.4:
+            num_loi_c = [max_score,thres-0.05]
         else:
-            num_loi_c = [0.8,0.6]
+            num_loi_c = [1.0,0.6]
         for e,score in enumerate(co_occurance_score):
             landmark_name = self.visible_landmark_name[e]
             if score>thres:
@@ -85,18 +86,18 @@ class co_occurance_based_schedular():
     def optimize(self):
         index = [0]
         distance = self.edge
-        score = (1+1e-3-np.asarray(self.node))/2
+        score = self.ratio*(1+1e-3-np.asarray(self.node))
         for i in range(1,len(self.node_info)):
             temp = np.arange(len(self.node_info))
             temp = np.delete(temp,index)
             dis = distance.copy()[index[-1]] # [N-i x 1]
             dis = np.delete(dis,index) # [N-i-1 x 1]
             scaled_score = np.delete(score,index)
-            scaled_score = dis*scaled_score # [N -i -1 x 1]
+            scaled_score = dis+scaled_score # [N -i -1 x 1]
             new = np.argmin(scaled_score)
             new = temp[new]
             index.append(new)
-        print(index)
+        # print(index)
         path = []
         for idx in index:
             path.append(self.node_info[idx])

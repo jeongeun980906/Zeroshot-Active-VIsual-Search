@@ -173,7 +173,7 @@ class RRT:
                                             self.expand_dis)
                     self.final_node = final_node
                     if safety_flag:
-                        print("path found!")
+                        # print("path found!")
                         final_path = self.generate_final_course()
                         self.final_path = final_path
                         return final_path

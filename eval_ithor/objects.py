@@ -3,13 +3,12 @@ import torch
 from detector.postprocess import postprocess
 
 object_bed = [
-    'AlarmClock','Book', "CellPhone",'CreditCard',"KeyChain", "Mug", "Pillow","CD","Laptop",
+    'AlarmClock','Book', "CellPhone",'CreditCard',"KeyChain", "Pillow","CD","Laptop",
     "TeddyBear","TissueBox"]
     
-object_kitchen = ['Book', 'Apple', 'Bread', "DishSponge" ,"Kettle","Pot","PepperShaker",
-                "Mug","Pan","Toaster","PaperTowelRoll"]
+object_kitchen = ['Book', 'Apple', 'Bread', "DishSponge" ,"Kettle","Pot", "Bowl", "Pan","Toaster","PaperTowelRoll"]
 
-object_living_room = ['Book',"CellPhone",'CreditCard',"KeyChain", "RemoteControl","TissueBox","Watch","Laptop"]
+object_living_room = ['Book',"CellPhone",'CreditCard',"KeyChain", "RemoteControl","TissueBox","Laptop"]
 
 object_bath = ['HandTowel',"SoapBar","SprayBottle","TissueBox","ToiletPaper","Towel"]
 

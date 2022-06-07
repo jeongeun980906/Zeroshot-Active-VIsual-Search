@@ -238,7 +238,10 @@ class single_scenemap():
 
     def get_min_reachable_point(self,x,y):
         res = []
-        total_axis = [[0,1],[1,0],[0,-1],[-1,0],[1/2,1/2],[-1/2,1/2],[-1/2,-1/2],[1/2,-1/2]]
+        total_axis = [[0,1],[1,0],[0,-1],[-1,0],
+                [1/2,1/2],[-1/2,1/2],[-1/2,-1/2],[1/2,-1/2],
+                [1/3,2/2],[-1/3,2/2],[-1/3,-2/3],[1/3,-2/3],
+                [2/3,1/2],[-2/3,1/2],[-2/3,-1/3],[2/3,-1/3]]
         for axis in total_axis:
             i = self.check_reachable(x,y,axis)
             if i != None:
@@ -259,10 +262,10 @@ class single_scenemap():
         axis = reachable_dict['axis']
         pos = [int(x+axis[0]*i),int(y+axis[1]*i)] 
         rot = self.axis2rot(axis)
-        size = 10
+        size = 3
         max_ratio = 0
         max_size = 0
-        while size>0:
+        while size<20:
             new_pos = [int(pos[0]+axis[0]*size),int(pos[1]+axis[1]*size)]
             if new_pos[0]>0 and new_pos[0]<self.grid_map.shape[0]-1 and new_pos[1]>0 and new_pos[1]<self.grid_map.shape[1]-1:
                 if self.grid_map[new_pos[0],new_pos[1],0]:
@@ -275,7 +278,7 @@ class single_scenemap():
                     if max_ratio<ratio:
                         max_size = size
                         max_ratio = ratio
-            size -= 2
+            size += 2
 
         if max_ratio>0.1:
             new_pos = [int(pos[0]+axis[0]*max_size),int(pos[1]+axis[1]*max_size)]
