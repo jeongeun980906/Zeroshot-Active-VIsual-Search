@@ -4,11 +4,12 @@ import sys
 
 try:
     # adding Folder_2 to the system path
-    sys.path.insert(0, '/home/jeongeun/faster_rcnn_rilab')
+    sys.path.insert(0, '/home/jeongeun/test_env/Open-Set-Object-Detection')
     from structures.box import Boxes,pairwise_ioa,pairwise_iou 
 except:
     print("Import Error")
     pass
+
 import clip
 from PIL import Image
 import numpy as np
@@ -17,14 +18,16 @@ import torch
 import torchvision.ops as OPS
 
 class matcher:
-    def __init__(self,query_object_name, threshold = 28, device='cuda'):
+    def __init__(self, landmark_names, threshold = 28, device='cuda'):
         self.clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=device)
         self.device = device
         self.thres = threshold
-        self.tokenize_query(query_object_name)
-        # self.clip_model.eval()
+        self.landmark_names = landmark_names
+        self.lthres = 29.5
+        # self.tokenize_query(query_object_name)
+        self.clip_model.eval()
 
-    def tokenize_query(self,query_object_name):
+    def tokenize(self,query_object_name):
         new_query_object_name = ''
         if len(query_object_name)>2:
             for i, letter in enumerate(query_object_name):
@@ -33,10 +36,35 @@ class matcher:
                 new_query_object_name += letter.lower()
         else:
             new_query_object_name = query_object_name
+        text = ['a photo of a {}'.format(new_query_object_name)]
+        for name in self.landmark_names:
+            new_name = ''
+            if len(name)>2:
+                for i, letter in enumerate(name):
+                    if i and letter.isupper():
+                        new_name += ' '
+                    new_name += letter.lower()
+            else:
+                new_name = name
+            text.append('a photo of a {}'.format(new_name))
+        text = clip.tokenize(text).to(self.device)
+        self.text_features = self.clip_model.encode_text(text).detach().cpu()
 
-        text = clip.tokenize(["a photo of a {}".format(new_query_object_name)]).to(self.device)
-        self.text_features = self.clip_model.encode_text(text)
-        # print("a photo of a {}".format(new_query_object_name))
+    def landmark_matching(self,img,pred_boxes):
+        boxes = pred_boxes.tensor.cpu()
+        patches,_ = self.make_patch(img,boxes.numpy())
+        if len(patches) == 0:
+            return torch.FloatTensor([]),torch.LongTensor([])
+        # print(dis.shape)
+        image_features = self.clip_model.encode_image(patches.to(self.device)).detach().cpu()
+
+        dis = torch.matmul(self.text_features[1:],image_features.T)
+        max_value, max_index = torch.max(dis,axis=0)
+        index = torch.where(max_value>self.lthres)
+        class_name = max_index[index]
+        boxes = boxes[index]
+        # print(max_value)
+        return boxes,class_name
     
     def make_patch(self,image,bboxs):
         res = []
@@ -75,6 +103,7 @@ class matcher:
     def matching_score(self,img,pred_boxes,gt_box):
         boxes = pred_boxes.tensor.cpu()
         if gt_box is not None:
+            pred_boxes = pred_boxes.to(self.device)
             gt_box = torch.LongTensor([gt_box]).to(self.device)
             gt_box = Boxes(gt_box)
             IoU = pairwise_iou(pred_boxes,gt_box)
@@ -83,10 +112,14 @@ class matcher:
         else:
             gt_label = torch.BoolTensor([False]*boxes.shape[0])
         patches,vis_patches = self.make_patch(img,boxes.numpy())
+        # print(patches.shape)
         if len(patches) == 0:
             return [],[],torch.BoolTensor([False])
-        image_features = self.clip_model.encode_image(patches.to(self.device))
-        dis = torch.matmul(self.text_features,image_features.T)
+        image_features = self.clip_model.encode_image(patches.to(self.device)).detach().cpu()
+        
+        # print(text_features)
+        query_features  = self.text_features[0].unsqueeze(0)
+        dis = torch.matmul(query_features,image_features.T)
         # print(dis)
         index = torch.where(dis>self.thres)[1].cpu()
         # print(gt_label,index)
@@ -94,7 +127,6 @@ class matcher:
         show_patch = vis_patches[index.numpy()]
         candidate_box = pred_boxes[index]
         return show_patch,candidate_box.tensor.cpu().numpy().astype(np.int16),sucess
-
 
 
 class matcher_base:

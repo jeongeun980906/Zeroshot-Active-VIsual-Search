@@ -73,7 +73,7 @@ def main(args):
     # random.seed()
     device = 'cuda:{}'.format(args.gpu)
     scene_names = get_scene(args)
-    # scene_names = scene_names[14:]
+    scene_names = scene_names[4:]
     # scene_names = random.choices(train,k=10)
     # scene_names = ['FloorPlan_Train8_1']
     # scene_names =  ['FloorPlan_Train1_2', 'FloorPlan_Train10_4','FloorPlan_Train9_1','FloorPlan_Train6_2',
@@ -100,7 +100,12 @@ def main(args):
     else:
         predictor = load_detector(device=device,ID=args.detector_id)
         unk_only_flag = False
-
+    
+    '''
+    Load Matcher
+    '''
+    query_matcher = matcher(query_object_name,threshold=args.clip_thres,device = device)
+    
     for scene_name in scene_names:
         print(scene_name)
         gridSize=0.05
@@ -108,7 +113,7 @@ def main(args):
         controller = Controller(
             platform = CloudRendering,
             agentMode="locobot",
-            visibilityDistance=1.5,
+            visibilityDistance=2.5,
             scene = scene_name,
             gridSize=gridSize,
             movementGaussianSigma=0,
@@ -154,10 +159,6 @@ def main(args):
             # print(query_object_name)
             # imshow_grid = sm.plot(controller.last_event.metadata['agent']['position'],query_object['position'])
             # plot_frames(controller.last_event,imshow_grid,landmark_config)
-            '''
-            Load Matcher
-            '''
-            query_matcher = matcher(query_object_name,threshold=args.clip_thres,device = device)
             """
             co occurance score
             """
@@ -251,7 +252,7 @@ def main(args):
             # print("Sucess?",total_success>0)
             # print("Total Path Length", total_path_len)
             if len(total_patch)>0:
-                plot_candidate(total_patch,total_mappoints,query_object_name,sm,store=True,scene_name=scene_name,args=args)
+                plot_candidate(total_patch,total_mappoints,query_object_name,sm,store=True,scene_name=scene_name,file_path = ST.file_path)
             
             SPL = (total_success>0)*min_dis/(total_path_len+1e-6)
             # print("SPL:", SPL)
@@ -264,7 +265,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-
+    parser.add_argument('--version',default = 3, type=int,help='version')
     parser.add_argument('--resume',action='store_true' ,default=False,help='Resume from json file')
     parser.add_argument('--val',action='store_true' ,default=False,help='val set')
     parser.add_argument('--gpu',default = 1, type=int,help='gpu setup')

@@ -45,7 +45,7 @@ def plot_openset(img,pred_boxes,pred_classes,CLASS_NAMES):
     plt.axis('off')
     plt.show()
 
-def plot_candidate(show_patches,show_points,new_query_object_name,scenemap,store=False,scene_name=None,args=None):
+def plot_candidate(show_patches,show_points,new_query_object_name,scenemap,store=False,scene_name=None,file_path=None):
     size = len(show_patches)
     plt.figure(figsize=(3*size,5))
     plt.suptitle("Candidate Image of [{}]".format(new_query_object_name))
@@ -66,16 +66,6 @@ def plot_candidate(show_patches,show_points,new_query_object_name,scenemap,store
             plt.imshow(map)
             plt.axis('off')
         if store:
-            if args.co_base:
-                num = 1
-            elif args.dis_only:
-                num =2 
-            else :
-                num=0
-            if args.val:
-                file_path = './res/val_%d_%d_%d'%(args.base_detector,num,args.num_loi)
-            else:      
-                file_path = './res/%d_%d_%d'%(args.base_detector,num,args.num_loi)
             plt.savefig("{}/{}_{}.png".format(file_path,scene_name,new_query_object_name))
         else:
             plt.show()

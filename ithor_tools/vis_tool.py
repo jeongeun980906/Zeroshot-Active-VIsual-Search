@@ -181,3 +181,85 @@ def vis_visit_landmark(query_object,path,controller,scenemap,landmark_config,sto
         plt.savefig('./res/visit.png')
     else:
         plt.show()
+
+
+def plot_frames2(event: Union[ai2thor.server.Event, np.ndarray],gridmap : np.ndarray, landmark_config) -> None:
+    """Visualize all the frames on an AI2-THOR Event.
+    Example:
+    plot_frames(controller.last_event)
+    """
+    if isinstance(event, ai2thor.server.Event):
+        third_person_frames = event.third_party_camera_frames
+        RGB = event.frame
+        DEPTH = event.depth_frame
+
+        # Set up the axes with gridspec
+        fig = plt.figure(figsize=(7, 14))
+        grid = plt.GridSpec(16, 6, wspace=0.4, hspace=0.3)
+
+        ax = fig.add_subplot(grid[:5, :3])
+        im = ax.imshow(RGB)
+        ax.axis("off")
+        ax.set_title('RGB')
+
+        ax = fig.add_subplot(grid[:5, 3:6])
+        im = ax.imshow(DEPTH)
+        ax.axis("off")
+        ax.set_title('DEPTH')
+        fig.colorbar(im, fraction=0.046, pad=0.04, ax=ax)
+
+        # add third party camera frames
+        ax = fig.add_subplot(grid[5:10, :6])
+        ax.set_title("Map View")
+        temp = crop_zeros(third_person_frames[0])
+        ax.imshow(temp)
+        ax.axis("off")
+
+        ax = fig.add_subplot(grid[10:15, :6])
+        ax.set_title("Memory Map")
+        ax.imshow(gridmap,cmap=plt.cm.gray_r)
+        ax.axis("off")
+        
+
+        ax = fig.add_subplot(grid[-1, :])
+        ax.set_title("Landmark")
+        cat_name = landmark_config['name']
+        cmap = landmark_config['color']
+        img = [i for i in range(len(cat_name))]
+        img = np.asarray(img).reshape(1,-1)
+        annot = np.asarray(cat_name).reshape(1,-1)
+        sns.heatmap(img, cmap=cmap,annot=annot, fmt = '', cbar=False,annot_kws={"size": 5})
+        ax.axis('off')
+
+        # plt.tight_layout()
+        plt.show()
+
+
+
+def draw_path(rrt,traj_image,path,NUM_WAYPOINT = 0,file_path=None,scene_name=None,query_name=None):
+    traj_image = np.ascontiguousarray(traj_image, dtype=np.uint8)
+    for idx in range(len(path)-1):
+        prev_xz = rrt.rstate[path[idx]]
+        next_xz = rrt.rstate[path[idx+1]]
+        prev_w,prev_h = rrt.play_area.xz2coor(prev_xz[0],prev_xz[1])
+        next_w,next_h = rrt.play_area.xz2coor(next_xz[0],next_xz[1])
+        cv2.line(traj_image, (int(prev_w),int(prev_h)), (int(next_w),int(next_h)), (0,255,255), 2)
+    # plt.imshow(traj_image)
+    # plt.plot(path_wh[:,0], path_wh[:,1],'-c')
+
+    # Cast start&end point coordinate in image
+    # startx, startz = (rrt.start.x), (rrt.start.z)
+    endx,   endz   = (rrt.end.x), (rrt.end.z)
+    
+    # startx, startz = rrt.play_area.xz2coor(startx, startz )
+    endx,   endz   = rrt.play_area.xz2coor(endx,   endz   )
+    
+    # plt.plot(startx, startz,"xr")
+    cv2.circle(traj_image, (int(endx),int(endz)), 5, (255,0,255), thickness=5)
+    cv2.putText(traj_image, str(NUM_WAYPOINT), (int(endx),int(endz)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2)
+    # plt.plot(endx, endz, "xr")
+    plt.figure()
+    plt.imshow(traj_image)
+    plt.savefig('{}/{}_{}_traj.png'.format(file_path,scene_name,query_name))
+    # plt.show()
+    return traj_image

@@ -141,7 +141,7 @@ def get_min_dis(query_object,controller,map,scedular):
         print('path error')
         min_length = 100
     if min_length == 0:
-        min_length += 0.1
+        min_length += 0.01
     return min_length
 
 # def get_min_dis(query_object,controller,map,schedular):

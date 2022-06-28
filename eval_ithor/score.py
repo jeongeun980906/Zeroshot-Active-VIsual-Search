@@ -4,16 +4,22 @@ import os
 class score_storage():
     def __init__(self,args):
         self.buffer = []
-        if args.co_base:
-            num = 1
-        elif args.dis_only:
-            num =2 
-        else :
-            num=0
-        if args.val:
-            self.file_path = './res/val_%d_%d_%d'%(args.base_detector,num,args.num_loi)
+        if args.version != None:
+            if args.val:
+                self.file_path = './res/v%d_val_%d_%d'%(args.version,args.base_detector,args.dis_only)
+            else:
+                self.file_path = './res/v%d_%d_%d'%(args.version,args.base_detector,args.dis_only)
         else:
-            self.file_path = './res/%d_%d_%d'%(args.base_detector,num,args.num_loi)
+            if args.co_base:
+                num = 1
+            elif args.dis_only:
+                num =2 
+            else :
+                num=0
+            if args.val:
+                self.file_path = './res/val_%d_%d_%d'%(args.base_detector,num,args.num_loi)
+            else:
+                self.file_path = './res/%d_%d_%d'%(args.base_detector,num,args.num_loi)
         try:
             os.mkdir(self.file_path)
         except:
