@@ -108,7 +108,8 @@ def line_collision_check(first, second,rrtplanner,verbose,resolution=100):
 def path_smoothing(rrtplanner, max_iter,verbose=False):
     path = rrtplanner.final_path
     rstate = rrtplanner.rstate
-    
+    random.seed(42)
+    np.random.seed(42)
     for i in range(max_iter):
         # Sample two points
         le = get_path_length(rstate,path)

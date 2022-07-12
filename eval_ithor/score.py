@@ -5,10 +5,13 @@ class score_storage():
     def __init__(self,args):
         self.buffer = []
         if args.version != None:
-            if args.val:
-                self.file_path = './res/v%d_val_%d_%d'%(args.version,args.base_detector,args.dis_only)
+            if args.scene == 'all':
+                if args.val:
+                    self.file_path = './res/v%d_val_%d_%d'%(args.version,args.base_detector,args.dis_only)
+                else:
+                    self.file_path = './res/v%d_%d_%d'%(args.version,args.base_detector,args.dis_only)
             else:
-                self.file_path = './res/v%d_%d_%d'%(args.version,args.base_detector,args.dis_only)
+                self.file_path = './res/v%d_%s_%d_%d'%(args.version,args.scene,args.base_detector,args.dis_only)
         else:
             if args.co_base:
                 num = 1
@@ -24,9 +27,9 @@ class score_storage():
             os.mkdir(self.file_path)
         except:
             pass
-    def append(self,score,query_object_name,scene_name):
+    def append(self,score,query_object_name,scene_name,num_waypoints):
         self.buffer.append(dict(score=score,query_name=query_object_name,
-                        scene_name=scene_name))
+                        scene_name=scene_name,num_waypoints=num_waypoints))
         
     def save_json(self):
         with open("{}/out.json".format(self.file_path),"w") as jf:

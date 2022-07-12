@@ -16,9 +16,6 @@ import numpy as np
 from ithor_tools.transform import cornerpoint_projection,ndarray
 import time
 
-random.seed(42)
-np.random.seed(42)
-
 class RRT:
     """
     Class for RRT planning
@@ -151,7 +148,8 @@ class RRT:
 
         animation: flag for animation on or off
         """
-
+        random.seed(42)
+        np.random.seed(42)
         self.node_list = [self.start]
         for i in range(self.max_iter):
             rnd_node = self.get_random_node()

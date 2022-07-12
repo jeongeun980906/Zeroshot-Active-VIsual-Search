@@ -2,17 +2,23 @@ import numpy as np
 import torch
 from detector.postprocess import postprocess
 
+total = ['RemoteControl','Laptop','Book','Apple','CD',
+            'Pot','Bowl','AlarmClock','TeddyBear',
+            'CellPhone','SprayBottle','Pillow']
+
 object_bed = [
-    'AlarmClock','Book', "CellPhone",'CreditCard',"KeyChain", "Pillow","CD","Laptop",
-    "TeddyBear","TissueBox"]
+    'AlarmClock','Book', "CellPhone", "Pillow","CD","Laptop",
+    "TeddyBear"]
     
-object_kitchen = ['Book', 'Apple', 'Bread', "DishSponge" ,"Kettle","Pot", "Bowl", "Pan","Toaster","PaperTowelRoll"]
+object_kitchen = ['Apple', 'Bread',"Kettle","Pot", 
+        "Bowl", "Pan","Toaster","PaperTowelRoll"]
 
-object_living_room = ['Book',"CellPhone",'CreditCard',"KeyChain", "RemoteControl","TissueBox","Laptop"]
+object_living_room = ['Book',"CellPhone", "RemoteControl","Laptop"]
 
-object_bath = ['HandTowel',"SoapBar","SprayBottle","TissueBox","ToiletPaper","Towel"]
+object_bath = ["SoapBar","SprayBottle","TissueBox",
+                    "ToiletPaper","Towel"]
 
-total = list(set(object_bed+object_kitchen+object_living_room+object_bath))
+# total = list(set(object_bed+object_kitchen+object_living_room+object_bath))
 
 def get_obj_list(scene_type):
     if scene_type == 'all':
@@ -41,9 +47,10 @@ def detect(frames,single_pos,gt_boxes,controller,predictor,matcher,d2w,unk_only_
     patch = np.zeros((0,256,256,3),dtype=np.uint8)
     map_p = []
     sucesses = 0
+    thres = 0.0 if unk_only_flag else 0.2
     for frame,pos,gt_box in zip(frames,single_pos,gt_boxes):
         pred = predictor(frame)
-        pred_boxes, pred_classes,unk_only = postprocess(pred)
+        pred_boxes, pred_classes,unk_only,_ = postprocess(pred,thres)
         # plot_openset(frame,pred_boxes,pred_classes,VOC_CLASS_NAMES)
         if unk_only_flag:
             pred_boxes = pred_boxes[unk_only]

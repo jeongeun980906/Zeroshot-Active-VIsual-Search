@@ -5,14 +5,33 @@ import numpy as np
 import math
 
 class traj_schedular():
-    def __init__(self,landmark_names,controller,co_thres = 0.2):
+    def __init__(self,landmark_names,controller,co_thres = 0.2,args=None):
         '''
         buffer: {name, pos, rot} only landmarks
         '''
         self.buffer = [] 
-        self.thres = 2
+        if args != None:
+            if args.scene == 'all':
+                self.thres = 2 # 1
+                self.ratio = 1
+                self.unct_ratio = args.unct_ratio
+                
+            else:
+                self.thres = 1 # 1
+                self.ratio = 3
+                self.unct_ratio = args.unct_ratio
+            
+            if args.unct_ratio>0:
+                self.unct_thres = 2.5
+            else:
+                self.unct_thres = 100
+        else:
+            self.thres = 2 # 1
+            self.ratio = 1
+            self.unct_ratio = 0.1
+
         self.co_thres = co_thres
-        self.ratio = 1#3
+        
         self.controller = controller
         
         self.landmark_names = landmark_names
@@ -20,31 +39,36 @@ class traj_schedular():
     def set_score(self,co_occurence):
         self.co_occurence_score = co_occurence
 
-    def schedule(self,cpos,crot, candidate_trajs):
+    def schedule(self,cpos,crot, candidate_trajs,uncts):
         register = [dict(name='current',pos=cpos,rot = crot)]
         frontiers = []
         score = [-1]
-        for c in candidate_trajs:
+        unct =[0]
+        for c,u in zip(candidate_trajs,uncts):
             if c['name'] != 'frontier':
                 flag = True
                 for w in self.buffer:
                     ncost = int(w['name'] != c['name'] )
-                    rcost = (abs(w['rot']- c['rot']))%180
+                    if w['rot']==None:
+                        rcost = 0
+                    else:
+                        rcost = (abs(w['rot']- c['rot']))%181
                     dcost = self.get_dis(w['pos'],c['pos'])
                     cost = dcost+ 0.01*rcost+ncost
-                    # print(cost)
+                    # print(cost,dcost,rcost,ncost)
                     if cost<self.thres:
                         flag = False
                 if flag:
                     co_score = self.landmark_names.index(c['name'])
                     co_score = self.co_occurence_score[co_score]
-                    if co_score> self.co_thres:
+                    if co_score> self.co_thres and u<self.unct_thres:
                         register.append(c)
+                        unct.append(u)
                         score.append(co_score) 
             else:
                 frontiers.append(c)
         dis_matrix = self.distance(register)
-        sorted_indx = self.optimize(score,dis_matrix)
+        sorted_indx = self.optimize(score,unct,dis_matrix)
         path = []
         for idx in sorted_indx:
             path.append(register[idx])
@@ -60,6 +84,8 @@ class traj_schedular():
                 visit_frontier = f
         path.append(visit_frontier)
         self.buffer += register
+        if visit_frontier != None:
+            self.buffer += [visit_frontier]
         return path
 
     def distance(self,buffer):
@@ -77,10 +103,10 @@ class traj_schedular():
         return score_matrix
 
 
-    def optimize(self,score, dis_matrix):
+    def optimize(self,score, unct,dis_matrix):
         index = [0]
         distance = dis_matrix
-        score = self.ratio*(1+1e-3-np.asarray(score))
+        score = self.ratio*(1+1e-3-np.asarray(score))#+ self.unct_ratio * np.asarray(unct)
         for i in range(1,len(score)):
             temp = np.arange(len(score))
             temp = np.delete(temp,index)

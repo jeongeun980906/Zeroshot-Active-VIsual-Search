@@ -16,7 +16,7 @@ class fbe_map():
         scenebound = np.asarray(scenebound)
         x_max, z_max = np.max(scenebound,axis=0)
         x_min, z_min  = np.min(scenebound,axis=0)
-        print(x_min,x_max,z_min,z_max)
+        # print(x_min,x_max,z_min,z_max)
         self.stepsize = stepsize
         x_max = self.stepsize* (x_max//self.stepsize)
         z_max = self.stepsize* (z_max//self.stepsize)
@@ -72,6 +72,7 @@ class fbe_map():
         rstate = rstate.astype('int32')
         for r in rstate:
             self.gt_grid_map[r[0],r[1],:] =[1,1,1]
+        self.unct_map = np.zeros((self.w_quan,self.h_quan))
             
     def visited(self,controller):
         cpos = controller.last_event.metadata['agent']['position']
@@ -82,7 +83,7 @@ class fbe_map():
             self.ray_y(cgrid,i) 
 
 
-    def proj(self,bboxs,classes,controller,visible_landmark_names):
+    def proj(self,bboxs,classes,uncts,controller,visible_landmark_names):
         boxfill = np.zeros((800,800,3)).astype(np.uint8)
         agent_pos = controller.last_event.metadata['agent']['position']
         agent_rot  = controller.last_event.metadata['agent']['rotation']['y']
@@ -90,7 +91,8 @@ class fbe_map():
         size = 0.2
         saved_color = []
         saved_name = []
-        for box, lname in zip(bboxs,classes):
+        saved_unct = []
+        for box, lname,unct in zip(bboxs,classes,uncts):
             height = box[3] - box[1]
             width = box[2] - box[0]
             center_x = (box[3]+box[1])/2
@@ -108,6 +110,7 @@ class fbe_map():
                 # print(color)
                 boxfill[n_x_l:n_x_u,n_y_l:n_y_u] = color
                 saved_color.append(color)
+                saved_unct.append(unct)
                 saved_name.append(lname)
 
         res,vpos = self.get_projection(controller,boxfill,agent_pos,agent_rot)
@@ -138,6 +141,7 @@ class fbe_map():
                 if (self.grid_map[map_pos[0],map_pos[1]] == [0,0,0]).all() or (self.grid_map[map_pos[0],map_pos[1]] == [0.5,0.5,0.5]).all():
                     
                     self.grid_map[map_pos[0],map_pos[1]] = new_color[:3]
+                    self.unct_map[map_pos[0],map_pos[1]] = saved_unct[saved_color.index(ccolor)]
                     detected_landmarks.append(class_name)
         
         return detected_landmarks
@@ -175,7 +179,7 @@ class fbe_map():
         for vx in voxels:
             grid_index = vx.grid_index
             pos_temp = voxel_grid.get_voxel_center_coordinate(grid_index)
-            if pos_temp[1]<1.7:
+            if pos_temp[1]<1.7: # Reject
                 color = vx.color
                 res[grid_index[2],grid_index[0]] = color
                 if round(color[0],3) > 0 :
@@ -183,7 +187,10 @@ class fbe_map():
                 elif pos_temp[1]>0.1:
                     map_pos = dict(x=pos_temp[2],y=pos_temp[1],z=pos_temp[0])
                     map_pos = self.xyz2grid(map_pos)
-                    self.grid_map[map_pos[0],map_pos[1],:] = [0,0,0]
+                    try:
+                        self.grid_map[map_pos[0],map_pos[1],:] = [0,0,0]
+                    except:
+                        pass
         del pcd, voxel_grid
         return res,vpos
 
@@ -285,6 +292,9 @@ class fbe_map():
         B = (self.grid_map[:,:,2]==color[2])
         total = R & G & B
         grid_poss = np.where(total>0)
+        uncts = self.unct_map[total[:,:]]
+        mean_unct = np.mean(uncts)
+        # print(mean_unct)
         try:
             x = int(np.mean(grid_poss[0]))
             y = int(np.mean(grid_poss[1]))
@@ -318,9 +328,9 @@ class fbe_map():
         #     rgrid = self.xyz2grid(rpos)
         #     self.grid_map[rgrid[0],rgrid[1]] = [1,0,1]
         if res != None:
-            return res,self.axis2rot(raxis),min_dis
+            return res,self.axis2rot(raxis),min_dis,mean_unct
         else:
-            return None,None,None
+            return None,None,None,None
 
     def reset_landmark(self,landmark_names):
         for landmark_name in landmark_names:
@@ -331,6 +341,7 @@ class fbe_map():
             B = (self.grid_map[:,:,2]==color[2])
             total = R & G & B
             self.grid_map[total] = [0,0,0]
+        self.unct_map = np.zeros((self.w_quan,self.h_quan))
 
     def check_reachable(self,x,y,axis,step_size):
         step = range(1,step_size)

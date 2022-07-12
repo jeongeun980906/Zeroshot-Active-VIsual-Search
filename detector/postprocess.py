@@ -4,20 +4,24 @@ import copy
 import cv2
 import numpy as np
 
-def postprocess(pred):
+def postprocess(pred,thres=0.2):
     pred = pred['instances']._fields
 
     pred_boxes = pred['pred_boxes']
     scores = pred['scores']
     pred_classes = pred['pred_classes']
-
-    index = torch.where(scores>0.2)[0]
+    try:
+        pred_uncts = pred['alea']+pred['epis']
+    except:
+        pred_uncts = torch.zeros_like(pred_classes)
+    index = torch.where(scores>thres)[0]
     pred_boxes = pred_boxes[index]
     pred_classes = pred_classes[index]
+    pred_uncts = pred_uncts[index]
     scores = scores[index]
 
     unk_only = (pred_classes == 20)
-    return pred_boxes,pred_classes, unk_only
+    return pred_boxes,pred_classes, unk_only, pred_uncts
 
 
 

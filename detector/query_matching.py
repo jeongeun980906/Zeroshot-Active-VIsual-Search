@@ -54,17 +54,22 @@ class matcher:
         boxes = pred_boxes.tensor.cpu()
         patches,_ = self.make_patch(img,boxes.numpy())
         if len(patches) == 0:
-            return torch.FloatTensor([]),torch.LongTensor([])
+            return torch.FloatTensor([]),torch.LongTensor([]),torch.FloatTensor([])
         # print(dis.shape)
         image_features = self.clip_model.encode_image(patches.to(self.device)).detach().cpu()
 
         dis = torch.matmul(self.text_features[1:],image_features.T)
+        dis = dis.type(torch.FloatTensor)
+        softmax = torch.softmax(dis,0)
+        # print(softmax.shape) # [6 x N]
+        entropy = -torch.sum(softmax*torch.log(softmax),1)
+        # print(entropy.shape)
         max_value, max_index = torch.max(dis,axis=0)
         index = torch.where(max_value>self.lthres)
         class_name = max_index[index]
         boxes = boxes[index]
         # print(max_value)
-        return boxes,class_name
+        return boxes,class_name,entropy
     
     def make_patch(self,image,bboxs):
         res = []
@@ -120,7 +125,6 @@ class matcher:
         # print(text_features)
         query_features  = self.text_features[0].unsqueeze(0)
         dis = torch.matmul(query_features,image_features.T)
-        # print(dis)
         index = torch.where(dis>self.thres)[1].cpu()
         # print(gt_label,index)
         sucess = gt_label[index]

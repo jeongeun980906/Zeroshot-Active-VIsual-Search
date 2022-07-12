@@ -61,6 +61,8 @@ def gather(controller,query_object,opos,step = 4,angle = 180, show=False):
     frames = []
     gt_boxes = []
     vis = 0
+    # controller.step("MoveRight")
+    # for _ in range(3):
     frames.append(controller.last_event.cv2img)
     pos = [dict(pos = controller.last_event.metadata['agent']['position'], 
                     rot = controller.last_event.metadata['agent']['rotation'])]
@@ -91,6 +93,9 @@ def gather(controller,query_object,opos,step = 4,angle = 180, show=False):
         gt_boxes.append(gt_box)
         vis += 1 if gt_box != None else 0
         controller.step("LookUp")
+    controller.step(action = "RotateLeft", degrees = angle)
+    #     controller.step("MoveBack",moveMagnitude = 0.05)
+    # controller.step("MoveAhead",moveMagnitude = 0.05*3)
     return frames,pos,gt_boxes,vis
 
 
@@ -113,7 +118,7 @@ def gather2(controller,query_object,predictor,postprocess,clip_matcher,
         vis += 1 if gt_box != None else 0
         pred = predictor(img)
         pred_boxes, pred_classes,_ = postprocess(pred)
-        pred_boxes, pred_classes = clip_matcher.landmark_matching(img,pred_boxes)
+        pred_boxes, pred_classes, pred_entropy = clip_matcher.landmark_matching(img,pred_boxes)
         if show:
             plot_openset(img,pred_boxes,pred_classes,visible_landmark_names)
         lnames = [visible_landmark_names[i] for i in pred_classes]
@@ -131,8 +136,8 @@ def gather3(controller,query_object,opos,predictor,postprocess,clip_matcher,
     vis = 0
     pos = []
     detected_landmarks = []
-    for _ in range(6):
-        controller.step(action="RotateRight",degrees = 60
+    for _ in range(9):
+        controller.step(action="RotateRight",degrees = 40
                             )
         pos.append(dict(pos = controller.last_event.metadata['agent']['position'], 
                     rot = controller.last_event.metadata['agent']['rotation']))
@@ -142,27 +147,32 @@ def gather3(controller,query_object,opos,predictor,postprocess,clip_matcher,
         gt_boxes.append(gt_box)
         vis += 1 if gt_box != None else 0
         pred = predictor(img)
-        pred_boxes, pred_classes,_ = postprocess(pred)
+        pred_boxes, pred_classes,_,pred_uncts = postprocess(pred)
         in_pred_classes = []
         mask = torch.zeros_like(pred_classes,dtype=torch.bool)
         for e,cat in enumerate(pred_classes):
             if cat in detection_labels:
                 mask[e] = True
                 in_pred_classes.append(detection_labels.index(cat.item()))
+                
         in_pred_classes = torch.LongTensor(in_pred_classes)
         in_pred_boxes = pred_boxes[mask].tensor.cpu()
+        # in_pred_uncts = pred_uncts[mask].cpu()
         mask = (pred_classes == 20)
+        # out_pred_uncts = pred_uncts[mask].cpu()
         out_pred_boxes = pred_boxes[mask]
-        out_pred_boxes, out_pred_classes = clip_matcher.landmark_matching(img,out_pred_boxes)
+        in_entropy = torch.ones_like(in_pred_classes)*0.5
+        out_pred_boxes, out_pred_classes, out_entropy = clip_matcher.landmark_matching(img,out_pred_boxes)
         if len(out_pred_classes)>0:
             out_pred_classes = out_pred_classes + len(in_landmark_names)
         # print(out_pred_classes.shape,in_pred_classes.shape)
         pred_classes = torch.cat((in_pred_classes,out_pred_classes),axis=0)
         pred_boxes = torch.cat((in_pred_boxes,out_pred_boxes),axis=0)
-        
+        pred_uncts = torch.cat((in_entropy,out_entropy),axis=0)
+        # print(pred_uncts)
         # plot_openset(img,pred_boxes,pred_classes,landmark_names)
         # l = m.detect_gt_box(controller)
-        l = scene_memory.proj(pred_boxes,pred_classes,controller,landmark_names)
+        l = scene_memory.proj(pred_boxes,pred_classes,pred_uncts,controller,landmark_names)
         if l != None:
             detected_landmarks += l
     detected_landmarks = list(set(detected_landmarks))
@@ -222,8 +232,8 @@ def get_gt_box(controller,query_object_IDs,show=False,version=1,opos=None):
         area = (GT_box[2]-GT_box[0])*(GT_box[3]-GT_box[1])
         # print(area/((instance_segmentation.shape[0]*instance_segmentation.shape[1])))
         thres = 1e-3 if version==1 else 1e-3
-        print(dis)
-        if area>thres*(instance_segmentation.shape[0]*instance_segmentation.shape[1]) and dis<2.5:
+        # print(dis)
+        if area>thres*(instance_segmentation.shape[0]*instance_segmentation.shape[1]) and dis<2.5:#2.5:
             return GT_box
         else:
             return None

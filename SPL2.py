@@ -38,14 +38,15 @@ from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
 from RRT import gridmaprrt as rrt
 from RRT import gridmaprrt_pathsmoothing as smoothing
 
-kitchens = [f"FloorPlan{i}_physics" for i in range(1, 31)]
-living_rooms = [f"FloorPlan{200 + i}_physics" for i in range(1, 31)]
-bedrooms = [f"FloorPlan{300 + i}_physics" for i in range(1, 31)]
-bathrooms = [f"FloorPlan{400 + i}_physics" for i in range(1, 31)]
+kitchens = [f"FloorPlan{i}_physics" for i in range(21, 31)]
+living_rooms = [f"FloorPlan{200 + i}_physics" for i in range(21, 31)]
+bedrooms = [f"FloorPlan{300 + i}_physics" for i in range(21, 31)]
+bathrooms = [f"FloorPlan{400 + i}_physics" for i in range(21, 31)]
 train = [f"FloorPlan_Train{i}_{j}" for i in range(1,12) for j in range(1,6)]
 val = [f"FloorPlan_Val{i}_{j}" for i in range(1,4) for j in range(1,6)]
 
-object_names = ['RemoteControl','Laptop','Book','Apple','CD','Pot','Bowl','AlarmClock','TeddyBear',
+object_names = ['RemoteControl','Laptop','Book','Apple','CD',
+            'Pot','Bowl','AlarmClock','TeddyBear',
             'CellPhone','SprayBottle','Pillow']
 # visible_landmark_names = ['Bed', 'DiningTable', 'StoveBurner', 'Desk','Drawer','Television','Sofa',
 #                 'SideTable','CoffeeTable','ArmChair',]
@@ -68,9 +69,8 @@ def get_scene(args):
     else:
         raise NotImplementedError
     
-
 def main(args):
-    
+    ROBOT_NAME = 'locobot' if args.scene == 'all' else 'default'
     angle = 200
     step = 5
     # random.seed(10)
@@ -81,7 +81,8 @@ def main(args):
     # random.seed()
     device = 'cuda:{}'.format(args.gpu)
     scene_names = get_scene(args)
-    scene_names = scene_names[9:]
+    # scene_names = scene_names[1:]
+    # scene_names = [scene_names[6]]
     # scene_names = random.choices(train,k=10)
     # scene_names = ['FloorPlan_Train8_1']
     # scene_names =  ['FloorPlan_Train1_2', 'FloorPlan_Train10_4','FloorPlan_Train9_1','FloorPlan_Train6_2',
@@ -95,7 +96,7 @@ def main(args):
     '''
     # landmark_cat = [Word_Dict[l] for l in landmark_names]
     if not args.dis_only:
-        co_occurance_scoring = co_occurance_score('cuda:0')
+        co_occurance_scoring = co_occurance_score(device)
         co_occurance_scoring.landmark_init(landmark_names)
     
     '''
@@ -108,16 +109,16 @@ def main(args):
         predictor = load_detector(device=device,ID=args.detector_id)
         unk_only_flag = True
     
-    clip_matcher = matcher(out_landmark_names,device='cuda:0')
+    clip_matcher = matcher(out_landmark_names,device=device)
 
     for scene_name in scene_names:
         print(scene_name)
         gridSize=0.05
-
+        
         controller = Controller(
             platform = CloudRendering,
-            agentMode="locobot",
-            visibilityDistance=2.5,
+            agentMode= ROBOT_NAME,
+            visibilityDistance=2.5, # 1.5
             scene = scene_name,
             gridSize=gridSize,
             movementGaussianSigma=0,
@@ -131,14 +132,14 @@ def main(args):
             fieldOfView=60
         )
 
-        objects,rstate = reset_scene(controller)
+        objects,rstate = reset_scene(controller,args)
         scene_bounds = controller.last_event.metadata['sceneBounds']['cornerPoints']
         scene_bounds = cornerpoint_projection(scene_bounds)
         
-        scene_memory = fbe_map(scene_bounds,rstate,landmark_names=landmark_names, stepsize=0.1)
-        sche = traj_schedular(landmark_names,controller,co_thres = args.co_thres)
+        
+        sche = traj_schedular(landmark_names,controller,co_thres = args.co_thres,args=args)
 
-        query_objects = choose_query_objects(objects,'all')
+        query_objects = choose_query_objects(objects,args.scene)
 
         
         move_init(controller,rstate)
@@ -149,7 +150,12 @@ def main(args):
         rrtplanner = rrt.RRT(controller = controller, expand_dis=0.1,max_iter=10000,goal_sample_rate=20)
         # print(len(query_objects))
         for query_object in tqdm(query_objects,desc=scene_name):
+            random.seed(100)
+            np.random.seed(100)
+            torch.random.manual_seed(100)
+            
             NUM_WAYPOINT = 0
+            scene_memory = fbe_map(scene_bounds,rstate,landmark_names=landmark_names, stepsize=0.1)
             move_init(controller,rstate)
             traj_image = controller.last_event.third_party_camera_frames[0]
             scene_memory.reset_gridmap()
@@ -180,17 +186,21 @@ def main(args):
             landmark_config = dict(name=landmark_names,color = scene_memory.landmark_colors)
             cpos = controller.last_event.metadata['agent']['position']
             candidate_trajs = []
+            uncts = []
             for l in detected_landmarks:
                 res = scene_memory.get_reachable(cpos,l)
                 if not res[0] == None:
+                    uncts.append(res[3])
                     res = dict(name=l,pos=res[0],rot = res[1])
                     candidate_trajs.append(res)
+                    
             waypoints = scene_memory.frontier_detection(cpos)
             candidate_trajs += waypoints
+            uncts += [0]*len(waypoints)
             flag = 0
             while not total_success:
                 cpos = controller.last_event.metadata['agent']['position']
-                path = sche.schedule(cpos,0,candidate_trajs)
+                path = sche.schedule(cpos,0,candidate_trajs,uncts)
                 # print(path)
                 for p in path[1:]:
                     if p == None:
@@ -211,13 +221,17 @@ def main(args):
                         landmark_config = dict(name=landmark_names,color = scene_memory.landmark_colors)
                         cpos = controller.last_event.metadata['agent']['position']
                         candidate_trajs = []
+                        uncts = []
                         for l in detected_landmarks:
                             res = scene_memory.get_reachable(cpos,l)
                             if not res[0] == None:
+                                uncts.append(res[3])
                                 res = dict(name=l,pos=res[0],rot = res[1])
                                 candidate_trajs.append(res)
+                                
                         waypoints = scene_memory.frontier_detection(cpos)
                         candidate_trajs += waypoints
+                        uncts += [0]*len(waypoints)
                         break
                     # print(p)
                     flag = 0
@@ -231,14 +245,15 @@ def main(args):
                         smoothpath = local_path
                     path_len = 0
                     fr_pos = rrtplanner.rstate[smoothpath[0]]
-                    for idx in smoothpath[1:]:
-                        to_pos = rrtplanner.rstate[idx]
-                        # Get constant distanced points
-                        delta = to_pos - fr_pos
-                        # theta = math.atan2(delta[1],delta[0])
-                        d = np.linalg.norm(delta)
-                        path_len += d
-                        fr_pos = to_pos
+                    if smoothpath != None:
+                        for idx in smoothpath[1:]:
+                            to_pos = rrtplanner.rstate[idx]
+                            # Get constant distanced points
+                            delta = to_pos - fr_pos
+                            # theta = math.atan2(delta[1],delta[0])
+                            d = np.linalg.norm(delta)
+                            path_len += d
+                            fr_pos = to_pos
                     # print(path_len)
                     NUM_WAYPOINT += 1
                     traj_image = draw_path(rrtplanner,traj_image,smoothpath,NUM_WAYPOINT = NUM_WAYPOINT,scene_name=scene_name,file_path=ST.file_path,query_name=query_object['objectType'])
@@ -303,9 +318,11 @@ def main(args):
                 total_path_len += 0.01
             SPL = (total_success>0)*min_dis/(total_path_len)
             # print("SPL:", SPL)
-            ST.append(SPL,query_object['objectType'],scene_name)
+            ST.append(SPL,query_object['objectType'],scene_name,NUM_WAYPOINT)
             ST.save_json()
+            del scene_memory
             del total_patch
+        # del 
         controller.stop()
     df = ST.average()
     print(df)
@@ -325,7 +342,7 @@ if __name__ == '__main__':
     # Co occurance measure setup
     parser.add_argument('--dis_only',action='store_true' ,default=False,help='no co-occurance')
     parser.add_argument('--co_thres',type = float ,default=0.2,help='co-occurance threshold')
-    
+    parser.add_argument('--unct_ratio',type = float ,default=0.2,help='unct ratio')
     # CLIP setup
     parser.add_argument('--clip_thres',default = 29, type=float,help='clip threshold')
     args = parser.parse_args()

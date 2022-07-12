@@ -19,7 +19,11 @@ from ai2thor.util.metrics import get_shortest_path_to_object
 
 ## Matching Module
 from detector.query_matching import matcher
-def reset_scene(controller):
+def reset_scene(controller,args):
+    if args.scene == 'all':
+        cam3_height = 5
+    else:
+        cam3_height = 2
     controller.reset(
     # makes the images a bit higher quality
     width=800,
@@ -34,7 +38,7 @@ def reset_scene(controller):
     scene_bounds = controller.last_event.metadata['sceneBounds']['center']
     controller.step(
         action="AddThirdPartyCamera",
-        position=dict(x=scene_bounds['x'], y=5.0, z=scene_bounds['z']),
+        position=dict(x=scene_bounds['x'], y=cam3_height, z=scene_bounds['z']),
         rotation=dict(x=90, y=0, z=0),
         orthographic=True,
         orthographicSize= 5.0, fieldOfView=100,
