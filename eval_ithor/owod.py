@@ -1,6 +1,6 @@
 from ithor_tools.landmark_utils import get_gt_box,in_landmark_names,out_landmark_names,landmark_names
 import sys
-sys.path.append("..") 
+sys.path.append("..")  # your path to owod
 import cv2
 import os
 import torch

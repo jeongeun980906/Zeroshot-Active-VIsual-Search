@@ -5,8 +5,6 @@ import argparse
 import math
 
 from zmq import device
-# adding Folder_2 to the system path
-sys.path.insert(0, '/home/jeongeun/faster_rcnn_rilab')
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -32,7 +30,7 @@ from co_occurance.comet_co import co_occurance_score
 from detector.postprocess import postprocess,plot_openset,plot_candidate
 # Matching Module
 from detector.query_matching import matcher
-from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
+from osod.data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
 
 # Planning Module
 from RRT import gridmaprrt as rrt

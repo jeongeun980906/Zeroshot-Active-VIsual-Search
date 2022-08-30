@@ -1,14 +1,7 @@
 # importing sys
 from lib2to3.pgen2 import token
-import sys
 
-try:
-    # adding Folder_2 to the system path
-    sys.path.insert(0, '/home/jeongeun/test_env/Open-Set-Object-Detection')
-    from structures.box import Boxes,pairwise_ioa,pairwise_iou 
-except:
-    print("Import Error")
-    pass
+from osod.structures.box import Boxes,pairwise_ioa,pairwise_iou 
 
 import clip
 from PIL import Image

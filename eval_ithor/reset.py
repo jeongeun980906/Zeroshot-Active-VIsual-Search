@@ -1,22 +1,16 @@
-try:
-    # importing sys
-    import sys
 
-    # adding Folder_2 to the system path
-    sys.path.insert(0, '/home/jeongeun/test_env/Open-Set-Object-Detection')
 
-    # Detector module
-    from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
-    import torch
-    import math
-    import matplotlib.pyplot as plt
-    from structures.box import Boxes
-    from engine.predictor import DefaultPredictor
+# Detector module
+from osod.data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
+import torch
+import math
+import matplotlib.pyplot as plt
+from osod.structures.box import Boxes
+from osod.engine.predictor import DefaultPredictor
 
-    from  config.config import get_cfg
-    from model.rcnn import GeneralizedRCNN
-except:
-    print("OSOD error")
+from osod.config.config import get_cfg
+from osod.model.rcnn import GeneralizedRCNN
+
 from detector.postprocess import postprocess,plot_openset,plot_candidate
 from ai2thor.util.metrics import get_shortest_path_to_object
 

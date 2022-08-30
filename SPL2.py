@@ -6,13 +6,9 @@ import math
 
 from zmq import device
 # adding Folder_2 to the system path
-try:
-    # adding Folder_2 to the system path
-    sys.path.insert(0, '/home/jeongeun/test_env/Open-Set-Object-Detection')
-    from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
-except:
-    print("Import Error")
-    raise ImportError
+
+from osod.data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
+
 
 import numpy as np
 import torch
