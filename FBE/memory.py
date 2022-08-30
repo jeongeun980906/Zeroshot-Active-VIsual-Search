@@ -172,6 +172,9 @@ class fbe_map():
                                                                     voxel_size=0.1)
         # o3d.visualization.draw_geometries([voxel_grid])
         voxels = voxel_grid.get_voxels()  # returns list of voxels
+        if len(voxels)==0:
+            return None, []
+
         indices = np.stack(list(vx.grid_index for vx in voxels))
         shape = indices.max(axis=0)
         res = np.zeros((shape[2]+1,shape[0]+1,3))

@@ -6,7 +6,14 @@ import math
 
 from zmq import device
 # adding Folder_2 to the system path
-sys.path.insert(0, '/home/jeongeun/faster_rcnn_rilab')
+try:
+    # adding Folder_2 to the system path
+    sys.path.insert(0, '/home/jeongeun/test_env/Open-Set-Object-Detection')
+    from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
+except:
+    print("Import Error")
+    raise ImportError
+
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -16,23 +23,24 @@ import ai2thor
 from ai2thor.controller import Controller,BFSController
 from ai2thor.platform import CloudRendering
 from eval_ithor.reset import reset_scene,load_detector,get_min_dis,move_init,load_detector_base
-from eval_ithor.objects import choose_query_objects,detect
+from eval_ithor.objects import choose_query_objects
 from eval_ithor.score import score_storage
-from ithor_tools.map2 import single_scenemap
-from ithor_tools.landmark_utils import gather,gather3,vis_panorama #,Word_Dict,choose_ladmark,landmark_names
+
+from detector.thor import gather,gather3,detect
 from ithor_tools.landmark_utils import landmark_names,in_landmark_names,out_landmark_names
 from ithor_tools.transform import cornerpoint_projection,depth2world
-from ithor_tools.vis_tool import vis_visit_landmark,draw_path
+from ithor_tools.vis_tool import vis_visit_landmark,draw_path,vis_panorama
 
 # Co occurance module
 from FBE.memory import fbe_map
 from FBE.schedular import traj_schedular
-from co_occurance.comet_co import co_occurance_score
+from co_occurance.comet_co import co_occurance_score,co_occurance_score_base
+from co_occurance.fliker import fliker_knowledge
 
 from detector.postprocess import postprocess,plot_openset,plot_candidate
 # Matching Module
 from detector.query_matching import matcher
-from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
+
 
 # Planning Module
 from RRT import gridmaprrt as rrt
@@ -53,7 +61,7 @@ object_names = ['RemoteControl','Laptop','Book','Apple','CD',
 
 detection_labels = []
 for l in in_landmark_names:
-    detection_labels.append(VOC_CLASS_NAMES.index(l))
+    detection_labels.append(VOC_CLASS_NAMES.index(l.replace(" ","")))
 
 def get_scene(args):
     if args.scene == 'all':
@@ -81,7 +89,7 @@ def main(args):
     # random.seed()
     device = 'cuda:{}'.format(args.gpu)
     scene_names = get_scene(args)
-    # scene_names = scene_names[1:]
+    scene_names = scene_names[12:]
     # scene_names = [scene_names[6]]
     # scene_names = random.choices(train,k=10)
     # scene_names = ['FloorPlan_Train8_1']
@@ -96,7 +104,12 @@ def main(args):
     '''
     # landmark_cat = [Word_Dict[l] for l in landmark_names]
     if not args.dis_only:
-        co_occurance_scoring = co_occurance_score(device)
+        if args.word_dis:
+            co_occurance_scoring = co_occurance_score_base()
+        elif args.fliker:
+            co_occurance_scoring = fliker_knowledge()
+        else:
+            co_occurance_scoring = co_occurance_score(device)
         co_occurance_scoring.landmark_init(landmark_names)
     
     '''
@@ -137,7 +150,7 @@ def main(args):
         scene_bounds = cornerpoint_projection(scene_bounds)
         
         
-        sche = traj_schedular(landmark_names,controller,co_thres = args.co_thres,args=args)
+        sche = traj_schedular(landmark_names,controller,args=args)
 
         query_objects = choose_query_objects(objects,args.scene)
 
@@ -160,8 +173,11 @@ def main(args):
             traj_image = controller.last_event.third_party_camera_frames[0]
             scene_memory.reset_gridmap()
             opos = query_object['position']
+            co_thres = args.co_thres
             if not args.dis_only:
                 co_occurance = co_occurance_scoring.score(query_object['objectType'])
+                # if max(co_occurance)<co_thres:
+                #     co_thres = max(co_thres)-0.2
             else:
                 co_occurance = [0]*len(landmark_names)
             
@@ -169,69 +185,56 @@ def main(args):
             clip_matcher.tokenize(query_object['objectType'])
 
             min_dis = get_min_dis(query_object,controller,None,None)
+            if min_dis == None:
+                continue
             total_patch = np.zeros((0,256,256,3),dtype=np.uint8)
             total_mappoints = []
             total_success = 0
             total_path_len = 0
-            frames,single_pos,gt_boxes,gt_vis,detected_landmarks = gather3(controller,[query_object['objectId']],opos,
-                        predictor,postprocess,clip_matcher,
-                    detection_labels,scene_memory)
-            # print('gt_vis?',gt_vis)
-            candidate_patches, candidate_map_points,sucesses = detect(frames,single_pos,gt_boxes,controller,predictor,clip_matcher,d2w,unk_only_flag = unk_only_flag)
-            total_patch = np.concatenate((total_patch,candidate_patches),axis=0)
-            total_mappoints += candidate_map_points
-            total_success += sucesses
-            
-            scene_memory.visited(controller)
-            landmark_config = dict(name=landmark_names,color = scene_memory.landmark_colors)
-            cpos = controller.last_event.metadata['agent']['position']
-            candidate_trajs = []
-            uncts = []
-            for l in detected_landmarks:
-                res = scene_memory.get_reachable(cpos,l)
-                if not res[0] == None:
-                    uncts.append(res[3])
-                    res = dict(name=l,pos=res[0],rot = res[1])
-                    candidate_trajs.append(res)
-                    
-            waypoints = scene_memory.frontier_detection(cpos)
-            candidate_trajs += waypoints
-            uncts += [0]*len(waypoints)
-            flag = 0
+            '''
+            search start
+            '''
             while not total_success:
+                '''
+                inintial scanning
+                '''
+                frames,single_pos,gt_boxes,gt_vis,detected_landmarks = gather3(controller,[query_object['objectId']],opos,
+                    predictor,postprocess,clip_matcher,
+                    detection_labels,scene_memory)
+                # print('gt_vis?',gt_vis)
+                candidate_patches, candidate_map_points,sucesses = detect(frames,single_pos,gt_boxes,controller,predictor,clip_matcher,d2w,unk_only_flag = unk_only_flag)
+
+                total_patch = np.concatenate((total_patch,candidate_patches),axis=0)
+                total_mappoints += candidate_map_points
+                total_success += sucesses
+            
+                scene_memory.visited(controller)
+                # landmark_config = dict(name=landmark_names,color = scene_memory.landmark_colors)
                 cpos = controller.last_event.metadata['agent']['position']
-                path = sche.schedule(cpos,0,candidate_trajs,uncts)
+                candidate_trajs = []
+                uncts = []
+                for l in detected_landmarks:
+                    res = scene_memory.get_reachable(cpos,l)
+                    if not res[0] == None:
+                        uncts.append(res[3])
+                        res = dict(name=l,pos=res[0],rot = res[1])
+                        candidate_trajs.append(res)
+                        
+                waypoints = scene_memory.frontier_detection(cpos)
+                candidate_trajs += waypoints
+                uncts += [0]*len(waypoints)
+                flag = 0
+                cpos = controller.last_event.metadata['agent']['position']
+                '''
+                waypoint generation
+                '''
+                path = sche.schedule(cpos,0,candidate_trajs,uncts,co_thres = co_thres)
                 # print(path)
                 for p in path[1:]:
                     if p == None:
                         print("Done exploration")
                         flag +=1
                         scene_memory.reset_gridmap()
-
-                        frames,single_pos,gt_boxes,gt_vis,detected_landmarks = gather3(controller,[query_object['objectId']],opos,
-                        predictor,postprocess,clip_matcher,
-                                detection_labels,scene_memory)
-                        # print('gt_vis?',gt_vis)
-                        candidate_patches, candidate_map_points,sucesses = detect(frames,single_pos,gt_boxes,controller,predictor,clip_matcher,d2w,unk_only_flag = unk_only_flag)
-                        total_patch = np.concatenate((total_patch,candidate_patches),axis=0)
-                        total_mappoints += candidate_map_points
-                        total_success += sucesses
-                        
-                        scene_memory.visited(controller)
-                        landmark_config = dict(name=landmark_names,color = scene_memory.landmark_colors)
-                        cpos = controller.last_event.metadata['agent']['position']
-                        candidate_trajs = []
-                        uncts = []
-                        for l in detected_landmarks:
-                            res = scene_memory.get_reachable(cpos,l)
-                            if not res[0] == None:
-                                uncts.append(res[3])
-                                res = dict(name=l,pos=res[0],rot = res[1])
-                                candidate_trajs.append(res)
-                                
-                        waypoints = scene_memory.frontier_detection(cpos)
-                        candidate_trajs += waypoints
-                        uncts += [0]*len(waypoints)
                         break
                     # print(p)
                     flag = 0
@@ -243,9 +246,11 @@ def main(args):
                         smoothpath = smoothing.path_smoothing(rrtplanner,40,verbose=False)
                     except:
                         smoothpath = local_path
+                    # print(smoothpath,pos,p['pos'])
                     path_len = 0
-                    fr_pos = rrtplanner.rstate[smoothpath[0]]
+    
                     if smoothpath != None:
+                        fr_pos = rrtplanner.rstate[smoothpath[0]]
                         for idx in smoothpath[1:]:
                             to_pos = rrtplanner.rstate[idx]
                             # Get constant distanced points
@@ -258,11 +263,13 @@ def main(args):
                     NUM_WAYPOINT += 1
                     traj_image = draw_path(rrtplanner,traj_image,smoothpath,NUM_WAYPOINT = NUM_WAYPOINT,scene_name=scene_name,file_path=ST.file_path,query_name=query_object['objectType'])
                     total_path_len += path_len
-                    goal_pos = dict(x=to_pos[0],y=0.91,z=to_pos[1])
+                    goal_pos = dict(x=to_pos[0],y=rstate[0]['y'],z=to_pos[1])
                     controller.step(
                     action="Teleport",
                     position = goal_pos, rotation = dict(x=0,y=0,z=0)
                         )
+                    if not controller.last_event.metadata['lastActionSuccess']:
+                            print("path failed")
                     # print(controller.last_event.metadata['lastActionSuccess'])
                     # 
                     # to_pos = rrtplanner.rstate[smoothpath[-1]]
@@ -271,37 +278,20 @@ def main(args):
                     # total_path_len += path_len
 
                     if p['name'] == 'frontier':
-                        # controller.step(
-                        # action="Teleport",
-                        # position = dict(x=to_pos[0],y=0.91,z=to_pos[1]), rotation = dict(x=0,y=0,z=0)
-                        #     )
-                        # print(controller.last_event.metadata['lastActionSuccess'])
+                        '''
+                        if the robot reaches the frontier
+                        '''
                         scene_memory.reset_landmark(detected_landmarks)
-                        frames,single_pos,gt_boxes,gt_vis,detected_landmarks = gather3(controller,[query_object['objectId']],opos,
-                                    predictor,postprocess,clip_matcher,
-                                detection_labels,scene_memory)
-                        candidate_patches, candidate_map_points,sucesses = detect(frames,single_pos,gt_boxes,controller,predictor,clip_matcher,d2w,unk_only_flag = unk_only_flag)
-                        total_patch = np.concatenate((total_patch,candidate_patches),axis=0)
-                        total_mappoints += candidate_map_points
-                        total_success += sucesses
-
-                        scene_memory.visited(controller)
-                        landmark_config = dict(name=landmark_names,color = scene_memory.landmark_colors)
-                        cpos = controller.last_event.metadata['agent']['position']
-                        candidate_trajs = []
-                        for l in detected_landmarks:
-                            res = scene_memory.get_reachable(cpos,l)
-                            if not res[0] == None:
-                                res = dict(name=l,pos=res[0],rot = res[1])
-                                candidate_trajs.append(res)
-                        waypoints = scene_memory.frontier_detection(cpos)
-                        candidate_trajs += waypoints
+                        break
                     else:
                         pos = controller.last_event.metadata['agent']['position']
                         controller.step(
                             action="Teleport",
                             position = pos, rotation = dict(x=0,y=p['rot']-angle/2,z=0)
                                 )
+                        if not controller.last_event.metadata['lastActionSuccess']:
+                            print("path failed")
+                            continue
                         frames, single_pos,gt_boxes,gt_vis = gather(controller,[query_object['objectId']],opos,step=step,angle=angle)
                         candidate_patches, candidate_map_points,sucesses = detect(frames,single_pos,gt_boxes,controller,predictor,clip_matcher,d2w,unk_only_flag = unk_only_flag)
                         total_patch = np.concatenate((total_patch,candidate_patches),axis=0)
@@ -341,6 +331,8 @@ if __name__ == '__main__':
 
     # Co occurance measure setup
     parser.add_argument('--dis_only',action='store_true' ,default=False,help='no co-occurance')
+    parser.add_argument('--fliker',action='store_true' ,default=False,help='co-occurance fliker')
+    parser.add_argument('--word_dis',action='store_true' ,default=False,help='co-occurance word_distance')
     parser.add_argument('--co_thres',type = float ,default=0.2,help='co-occurance threshold')
     parser.add_argument('--unct_ratio',type = float ,default=0.2,help='unct ratio')
     # CLIP setup

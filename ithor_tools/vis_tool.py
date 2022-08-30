@@ -263,3 +263,16 @@ def draw_path(rrt,traj_image,path,NUM_WAYPOINT = 0,file_path=None,scene_name=Non
     plt.savefig('{}/{}_{}_traj.png'.format(file_path,scene_name,query_name))
     # plt.show()
     return traj_image
+
+def vis_panorama(frames,res=360):
+    plt.figure(figsize=(10,5))
+    col = len(frames)
+    angle = res/col
+    for e, frame in enumerate(frames):
+        plt.subplot(1,col,e+1)
+        plt.title("{}".format(e))
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        plt.imshow(frame)
+        plt.axis('off')
+    plt.show()
+

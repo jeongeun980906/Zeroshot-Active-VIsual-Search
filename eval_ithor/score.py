@@ -2,21 +2,35 @@ import pandas as pd
 import json
 import os
 class score_storage():
-    def __init__(self,args):
+    def __init__(self,args,owod=False):
         self.buffer = []
-        if args.version != None:
+        if owod:
+            self.file_path = './res/v%d_val_2_0'%(args.version)
+        elif args.version != None:
+            if args.dis_only:
+                num = 1 
+            elif args.fliker:
+                num = 2
+            elif args.word_dis:
+                num = 3
+            else :
+                num=0
             if args.scene == 'all':
                 if args.val:
-                    self.file_path = './res/v%d_val_%d_%d'%(args.version,args.base_detector,args.dis_only)
+                    self.file_path = './res/v%d_val_%d_%d'%(args.version,args.base_detector,num)
                 else:
-                    self.file_path = './res/v%d_%d_%d'%(args.version,args.base_detector,args.dis_only)
+                    self.file_path = './res/v%d_%d_%d'%(args.version,args.base_detector,num)
             else:
-                self.file_path = './res/v%d_%s_%d_%d'%(args.version,args.scene,args.base_detector,args.dis_only)
+                self.file_path = './res/v%d_%s_%d_%d'%(args.version,args.scene,args.base_detector,num)
         else:
             if args.co_base:
                 num = 1
             elif args.dis_only:
                 num =2 
+            elif args.fliker:
+                num = 3
+            elif args.word_dis:
+                num = 4
             else :
                 num=0
             if args.val:

@@ -52,20 +52,24 @@ class co_occurance_score_base():
         Word2Vec
         '''
         # Load vectors directly from the file
-        self.model = KeyedVectors.load_word2vec_format('data/GoogleGoogleNews-vectors-negative300.bin', binary=True)
+        self.nlp = spacy.load('en_core_web_md')
     def landmark_init(self,landmark_cat):
         self.landmark_cat = landmark_cat
     
     def score(self,query_object_name):
         new_query_object_name = ''
-
-        for i, letter in enumerate(query_object_name):
-            if i and letter.isupper():
-                new_query_object_name += ' '
-            new_query_object_name += letter.lower()
+        if len(query_object_name)>2:
+            for i, letter in enumerate(query_object_name):
+                if i and letter.isupper():
+                    new_query_object_name += ' '
+                new_query_object_name += letter.lower()
+        else:
+            new_query_object_name = query_object_name
 
         res = []
         for l in self.landmark_cat:
-            sim = self.model.similarity(l,new_query_object_name)
-            res.append(round(max(sim),3))
+            sims = []
+            doc1 = self.nlp(new_query_object_name)
+            doc2 = self.nlp(l)
+            res.append(doc1.similarity(doc2))
         return res

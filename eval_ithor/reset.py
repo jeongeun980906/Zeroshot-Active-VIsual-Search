@@ -1,19 +1,22 @@
-# importing sys
-import sys
+try:
+    # importing sys
+    import sys
 
-# adding Folder_2 to the system path
-sys.path.insert(0, '/home/jeongeun/test_env/Open-Set-Object-Detection')
+    # adding Folder_2 to the system path
+    sys.path.insert(0, '/home/jeongeun/test_env/Open-Set-Object-Detection')
 
-# Detector module
-from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
-import torch
-import math
-import matplotlib.pyplot as plt
-from structures.box import Boxes
-from engine.predictor import DefaultPredictor
+    # Detector module
+    from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
+    import torch
+    import math
+    import matplotlib.pyplot as plt
+    from structures.box import Boxes
+    from engine.predictor import DefaultPredictor
 
-from  config.config import get_cfg
-from model.rcnn import GeneralizedRCNN
+    from  config.config import get_cfg
+    from model.rcnn import GeneralizedRCNN
+except:
+    print("OSOD error")
 from detector.postprocess import postprocess,plot_openset,plot_candidate
 from ai2thor.util.metrics import get_shortest_path_to_object
 
@@ -93,7 +96,6 @@ def load_detector(device='cuda:0',ID=19):
     predictor = DefaultPredictor(cfg,model)
     return predictor
 
-
 def load_detector_base(device='cuda:0'):
     '''
     config file: VOC trained only
@@ -142,10 +144,10 @@ def get_min_dis(query_object,controller,map,scedular):
             min_length += math.sqrt((last_pos['x']-p['x'])**2+(last_pos['z']-p['z'])**2)
             last_pos = p
     except:
-        print('path error')
-        min_length = 100
-    if min_length == 0:
-        min_length += 0.01
+        p = query_object['position']
+        min_length = math.sqrt((pos['x']-p['x'])**2+(pos['z']-p['z'])**2) - 2.5
+    if min_length <= 0:
+        min_length = 0.01
     return min_length
 
 # def get_min_dis(query_object,controller,map,schedular):
@@ -188,5 +190,5 @@ def get_min_dis(query_object,controller,map,scedular):
 def move_init(controller,rstate):
     controller.step(
         action="Teleport",
-        position = rstate[100]
+        position = rstate[100] #100
     )

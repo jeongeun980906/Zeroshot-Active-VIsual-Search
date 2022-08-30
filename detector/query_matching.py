@@ -36,6 +36,7 @@ class matcher:
                 new_query_object_name += letter.lower()
         else:
             new_query_object_name = query_object_name
+        self.new_query_object_name = new_query_object_name
         text = ['a photo of a {}'.format(new_query_object_name)]
         for name in self.landmark_names:
             new_name = ''
