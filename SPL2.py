@@ -7,7 +7,9 @@ import math
 from zmq import device
 # adding Folder_2 to the system path
 
-from osod.data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
+import sys
+sys.path.append("./osod/")
+from data.phase_1 import load_voc_instances,VOC_CLASS_NAMES
 
 
 import numpy as np
@@ -85,7 +87,7 @@ def main(args):
     # random.seed()
     device = 'cuda:{}'.format(args.gpu)
     scene_names = get_scene(args)
-    scene_names = scene_names[12:]
+    scene_names = scene_names
     # scene_names = [scene_names[6]]
     # scene_names = random.choices(train,k=10)
     # scene_names = ['FloorPlan_Train8_1']

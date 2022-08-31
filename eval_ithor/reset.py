@@ -57,25 +57,23 @@ def load_detector(device='cuda:0',ID=19):
     config file
     '''
     cfg = get_cfg()
-    cfg.merge_from_file('../Open-Set-Object-Detection/config_files/voc.yaml')
+    cfg.merge_from_file('./osod/config_files/voc.yaml')
     cfg.MODEL.SAVE_IDX=ID
     cfg.MODEL.RPN.USE_MDN=False
     cfg.log = False 
+    
+
     cfg.MODEL.ROI_HEADS.USE_MLN = True
-    cfg.MODEL.ROI_HEADS.AUTO_LABEL = False
-    cfg.MODEL.ROI_HEADS.AF = 'baseline'
-    cfg.MODEL.RPN.AUTO_LABEL = False
-    cfg.MODEL.ROI_BOX_HEAD.USE_FD = False
-    cfg.MODEL.RPN.AUTO_LABEL_TYPE = 'sum'
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 21
+    cfg.MODEL.RPN.AUTO_LABEL_TYPE = None
     cfg.INPUT.RANDOM_FLIP = "none"
     cfg.MODEL.ROI_HEADS.UNCT = True
     cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.3
     cfg.phase = 'voc'
-    cfg.PATH = '../Open-Set-Object-Detection'
+    cfg.PATH = './osod'
 
     # cfg.merge_from_list(args.opts)
-    RPN_NAME = 'mdn' if cfg.MODEL.RPN.USE_MDN else 'base'
+    RPN_NAME = 'base'
     ROI_NAME = 'mln' if cfg.MODEL.ROI_HEADS.USE_MLN else 'base'
     MODEL_NAME = RPN_NAME + ROI_NAME
     # cfg.merge_from_list(args.opts)
@@ -83,7 +81,7 @@ def load_detector(device='cuda:0',ID=19):
     # wandb.init(config=cfg,tags= 'temp',name = 'temp',project='temp')
 
     model = GeneralizedRCNN(cfg,device = device).to(device)
-    state_dict = torch.load('../Open-Set-Object-Detection/ckpt/{}/{}_{}_15000.pt'.format(cfg.MODEL.ROI_HEADS.AF,cfg.MODEL.SAVE_IDX,MODEL_NAME),map_location=device)
+    state_dict = torch.load('./osod/ckpt/baseline/{}_{}_15000.pt'.format(cfg.MODEL.SAVE_IDX,MODEL_NAME),map_location=device)
     pretrained_dict = {k: v for k, v in state_dict.items() if k in model.state_dict()}
     model.load_state_dict(pretrained_dict)
 
@@ -95,25 +93,22 @@ def load_detector_base(device='cuda:0'):
     config file: VOC trained only
     '''
     cfg = get_cfg()
-    cfg.merge_from_file('../Open-Set-Object-Detection/config_files/voc.yaml')
+    cfg.merge_from_file('./osod/config_files/voc.yaml')
     cfg.MODEL.SAVE_IDX=2
     cfg.phase = 'voc'
-    cfg.MODEL.RPN.USE_MDN=False
+
     cfg.log = False 
     cfg.MODEL.ROI_HEADS.USE_MLN = False
     cfg.MODEL.ROI_HEADS.AUTO_LABEL = False
-    cfg.MODEL.ROI_HEADS.AF = 'baseline'
-    cfg.MODEL.RPN.AUTO_LABEL = False
-    cfg.MODEL.ROI_BOX_HEAD.USE_FD = False
-    cfg.MODEL.RPN.AUTO_LABEL_TYPE = 'sum'
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 20
     cfg.INPUT.RANDOM_FLIP = "none"
     cfg.MODEL.ROI_HEADS.UNCT = False
+
     cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.3
-    cfg.PATH = '../Open-Set-Object-Detection'
+    cfg.PATH = './osod'
 
     # cfg.merge_from_list(args.opts)
-    RPN_NAME = 'mdn' if cfg.MODEL.RPN.USE_MDN else 'base'
+    RPN_NAME = 'base'
     ROI_NAME = 'mln' if cfg.MODEL.ROI_HEADS.USE_MLN else 'base'
     MODEL_NAME = RPN_NAME + ROI_NAME
     # cfg.merge_from_list(args.opts)
@@ -121,7 +116,7 @@ def load_detector_base(device='cuda:0'):
     # wandb.init(config=cfg,tags= 'temp',name = 'temp',project='temp')
 
     model = GeneralizedRCNN(cfg,device = device).to(device)
-    state_dict = torch.load('../Open-Set-Object-Detection/ckpt/{}/{}_{}_17000.pt'.format(cfg.MODEL.ROI_HEADS.AF,cfg.MODEL.SAVE_IDX,MODEL_NAME),map_location=device)
+    state_dict = torch.load('./osod/ckpt/baseline/{}_{}_17000.pt'.format(cfg.MODEL.SAVE_IDX,MODEL_NAME),map_location=device)
     pretrained_dict = {k: v for k, v in state_dict.items() if k in model.state_dict()}
     model.load_state_dict(pretrained_dict)
 
