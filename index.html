@@ -6,7 +6,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
     
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ZAVIS:Zeroshot Active VIsual Search</title>
+    <title> Active Visual Search in the Wild</title>
     <!-- Bootstrap -->
     <link href="./css/bootstrap.css" rel="stylesheet">
 <style>[_nghost-brs-c79]{height:100vh}.weava-ui-wrapper-new[_ngcontent-brs-c79]{box-shadow:#0006 -1px 3px 60px;position:fixed;top:0;opacity:.99;left:initial;right:-580px;display:block;width:340px;min-width:auto;height:100vh;z-index:9999999999996!important;background:white;border:none;box-sizing:border-box;transition:1s}.weava-ui-wrapper-new[_ngcontent-brs-c79] > *[_ngcontent-brs-c79]{display:flex}.weava-ui-wrapper-new.show[_ngcontent-brs-c79]{right:0;transition:1s}.weava-ui-wrapper-new.show.folder-show[_ngcontent-brs-c79]{width:580px!important}ngb-toast.weava-notification-frame[_ngcontent-brs-c79]{box-shadow:#0006 -1px 3px 45px!important;position:fixed!important;left:initial!important;top:20px!important;right:20px!important;width:300px!important;border-radius:4px!important;background-color:#142733!important;transition:all .3s ease!important;z-index:999}</style><style></style><style>#clipperButton[_ngcontent-brs-c82]{font-size:30px!important;line-height:30px!important;width:30px!important;height:30px!important;text-align:center!important;z-index:2147483647!important;position:absolute!important;top:5px!important;right:5px!important;padding:0!important;background:midnightblue!important;color:#fff!important;border:none!important;outline:none!important;border-radius:50%!important}.weava-drop-area-wrapper[_ngcontent-brs-c82]{position:fixed!important;z-index:2147483647!important;top:50%!important;width:70px!important;padding-left:10px;left:-10px;background-color:#142733!important;transition:left .2s!important;opacity:0;display:flex;flex-direction:column;justify-content:center}.weava-drop-area-wrapper.weava-drop-area-wrapper-show[_ngcontent-brs-c82]{opacity:1}.weava-drop-area-wrapper.weava-drop-area-wrapper-drag-over[_ngcontent-brs-c82]{left:0}.weava-drop-area[_ngcontent-brs-c82]{display:inline-flex;justify-content:center;height:50px!important;background-color:#142733!important}.weava-drop-area[_ngcontent-brs-c82] > img[_ngcontent-brs-c82]{max-width:80%;margin:3px}.weava-drop-area-text[_ngcontent-brs-c82]{font-weight:bold!important;padding:7px 0!important;text-align:center!important;background-color:#142733!important;color:#cbcbcb!important;font-size:10px!important}</style><style>[_nghost-brs-c49]{width:340px;height:100vh}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-main[_ngcontent-brs-c49]   .logo[_ngcontent-brs-c49]{width:60%;margin-top:40px}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-main[_ngcontent-brs-c49]   .title[_ngcontent-brs-c49]{max-width:250px;color:#848484;font-family:"Lato","Helvetica Neue","Helvetica",sans-serif;font-size:18px;font-weight:400;line-height:24px;text-align:center;margin-top:24px}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-main[_ngcontent-brs-c49]   .login-btn[_ngcontent-brs-c49]{width:60%;padding:10px 15px;border-radius:2px;border:1px solid #00b8c2;background:#00bfd2;color:#fff;font-size:14px;text-align:center;transition:all .1s ease-in;cursor:pointer;margin-top:58px}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-main[_ngcontent-brs-c49]   .login-btn[_ngcontent-brs-c49]:hover{background:#01dccf;color:#fff}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-main[_ngcontent-brs-c49]   .login-btn[_ngcontent-brs-c49]:active, [_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-main[_ngcontent-brs-c49]   .login-btn.active[_ngcontent-brs-c49]{background:#617186;border-color:#617186}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-loader[_ngcontent-brs-c49]   .logo-wrap[_ngcontent-brs-c49]{height:50%;max-height:200px}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-loader[_ngcontent-brs-c49]   .logo-wrap[_ngcontent-brs-c49]   .logo[_ngcontent-brs-c49]{width:50%}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-loader[_ngcontent-brs-c49]   .logo-wrap[_ngcontent-brs-c49]   .loader[_ngcontent-brs-c49]{width:40px;height:40px;margin-top:14px}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-loader[_ngcontent-brs-c49]   .login-actions[_ngcontent-brs-c49]{height:50%;max-height:280px}[_nghost-brs-c49]   .login-c[_ngcontent-brs-c49]   .login-loader[_ngcontent-brs-c49]   .login-actions[_ngcontent-brs-c49]   .space[_ngcontent-brs-c49]{margin:20px}</style></head>
@@ -20,8 +20,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
             <div class="container">
                 <div class="row">
                     <div class="col-12">
-                        <h1>ZAVIS: Zeroshot Active VIsual Search  </h1>
-                        <h2>Intelligent Object Search for Robotic Assistants</h2>
+                        <h1>Active Visual Search in the Wild </h1>
 						<h5>
 							<a href="ffff" target="_blank">Jeongeun Park</a><sup>1</sup>&nbsp;&nbsp;&nbsp;
                             <a target="_blank">Taerim Yoon</a><sup>1</sup>&nbsp;&nbsp;&nbsp;
@@ -51,7 +50,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
                             </li>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             <li>
-                                <a href="https://github.com/jeongeun980906/ZAVIS-Zeroshot-Active-VIsual-Search">
+                                <a href="https://github.com/jeongeun980906/Zeroshot-Active-VIsual-Search">
                                     <img src="./assets/github.png" height="60px">
                                         <h4><strong>Code</strong></h4>
                                 </a>
@@ -82,11 +81,11 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
                         objects to search for, rendering these techniques restrictive in
                         practice. To provide added flexibility in active visual searching,
                         we propose a system where a user can enter target commands
-                        using free-form language; we call this system Zero-shot Active
-                        Visual Search (ZAVIS). ZAVIS detects and plans to search for
+                        using free-form language; we call this system Active Visual Search in the Wild (ASVW). 
+                        ASVW detects and plans to search for
                         a target object inputted by a user through a semantic grid
                         map represented by static landmarks (e.g., desk or bed). For
-                        efficient planning of object search patterns, ZAVIS considers
+                        efficient planning of object search patterns, ASVW considers
                         commonsense knowledge-based co-occurrence and predictive
                         uncertainty while deciding which landmarks to visit first. We
                         validate the proposed method with respect to SR (success
@@ -94,7 +93,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
                         simulated and real-world environments. The proposed method
                         outperforms previous methods in terms of SPL in simulated
                         scenarios with an average gap of 0.283. We further demonstrate
-                        ZAVIS with a Pioneer-3AT robot in real-world studies
+                        ASVW with a Pioneer-3AT robot in real-world studies
                     </p>
                 </div>
             </div>
@@ -104,12 +103,13 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
     <section>
         <div class="container">
             <h3><b>Full Video</b></h3>
-            <div class="col-12 text-center">
+            TBD
+            <!-- <div class="col-12 text-center">
                 <div class="video_wrapper">
                     <iframe width="560" height="315" src="https://www.youtube.com/embed/5XcU_dNL3lo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 </div>
                 </div>
-            </div>
+            </div> -->
         </div>
     </section>
 
@@ -118,14 +118,14 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
             <h3><b>Approach</b></h3>
             <h5>Architecture</h5>
             <figure class="figure text-center">
-                <img src="./assets/architecture.png" style="width: 50%">
-                <figcaption class="figure-caption text-center">Ground Truth</figcaption>
+                <img src="./assets/architecture.jpg" style="width: 90%">
+                <figcaption class="figure-caption text-center">Architecture</figcaption>
             </figure>
             
             <h5>Detection</h5>
                 <figure class="figure text-center">
-                    <img src="./assets/detection.png" style="width: 50%">
-                    <figcaption class="figure-caption text-center">Architecture</figcaption>
+                    <img src="./assets/detection.jpg" style="width: 50%">
+                    <figcaption class="figure-caption text-center">Detection</figcaption>
                 </figure>
         </div>
     </section>
@@ -134,10 +134,42 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
         <div class="container">
             <h3><b>Results</b></h3>
             <h5>Simulation</h5>
+            <b>Detection Results</b>
+            <br>
+            <figure class="figure text-center">
+                <img src="./assets/example2.png" style="width: 50%">
+                <figcaption class="figure-caption text-center">Detection Results</figcaption>
+            </figure>
+            <br>
+            <b>Trajectory  Examples</b>
+            <br>
+            <figure class="figure text-center">
+                <img src="./assets/example1.jpg" style="width: 50%">
+                <figcaption class="figure-caption text-center">Detection Results</figcaption>
+            </figure>
             <h5>Realworld</h5>
+            <b>Demonstration</b>
+            <br>
+            <figure class="figure text-center">
+                <img src="./assets/demo.jpg" style="width: 80%">
+                <figcaption class="figure-caption text-center">Realworld Demonstration</figcaption>
+            </figure>
+            <br>
             <b>Ablation</b>
-
+            <br>
+            <p style="text-align:center;">
+                <video id="v0" width="60%" playsinline="" autoplay="" muted="" loop="" controls="">
+                    <source src="./assets/ablation.mp4" type="video/mp4">
+                </video>
+            </p>
+            <br>
             <b>Various Target</b>
+            <br>
+            <p style="text-align:center;">
+                <video id="v0" width="60%" playsinline="" autoplay="" muted="" loop="" controls="">
+                    <source src="./assets/varios_targets.mp4" type="video/mp4">
+                </video>
+            </p>
         </div>
     </section>
 
