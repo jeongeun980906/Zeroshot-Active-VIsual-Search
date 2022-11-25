@@ -1,4 +1,6 @@
-# ITHOR_Navi
+# Zeroshot-Active-VIsual-Search
+Experiment for the AI2THOR environmen
+Check out Project Page [Here](https://jeongeun980906.github.io/Zeroshot-Active-VIsual-Search/)
 
 ## Setup
 ```
