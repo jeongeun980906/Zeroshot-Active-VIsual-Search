@@ -1,5 +1,7 @@
 # Zeroshot-Active-VIsual-Search
-Experiment for the AI2THOR environmen
+Experiment for the AI2THOR environment
+
+
 Check out Project Page [Here](https://jeongeun980906.github.io/Zeroshot-Active-VIsual-Search/)
 
 ## Setup
