@@ -66,10 +66,6 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
 
         <div class="container">
             <h3><b>To be appear in ICRA 2023</b></h3>
-            <h4>
-                <a href="https://socratesrobotdog.github.io/" target="_blank">V2 - SOCRATES: Text-based Human Search and Approach using a Robot Dog
-                </a>
-            </h4>
             <p style="text-align:center;">
                 <video id="v0" width="80%" playsinline="" autoplay="" muted="" loop="" controls="">
                    <source src="./assets/intro.mp4" type="video/mp4">
@@ -96,56 +92,47 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
     <section>
         <div class="container">
             <h3><b>Full Video</b></h3>
-            TBD
-            <!-- <div class="col-12 text-center">
+            <div class="col-12 text-center">
                 <div class="video_wrapper">
-                    <iframe width="560" height="315" src="https://www.youtube.com/embed/5XcU_dNL3lo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <iframe width="560" height="315" src="https://youtu.be/swL1LNX5QsI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 </div>
                 </div>
-            </div> -->
+            </div>
         </div>
     </section>
 
     <section>
         <div class="container">
-            <h3><b>Approach</b></h3>
+            <h3><b>Proposed Method</b></h3>
             <h5>Architecture</h5>
             <figure class="figure text-center">
-                <img src="./assets/architecture.jpg" style="width: 90%">
+                <img src="./assets/architecture.jpg" style="width: 80%">
                 <figcaption class="figure-caption text-center">Architecture</figcaption>
             </figure>
-            
+            The overall procedure of ZAVIS. We present ZAVIS framework, object search based on free-form language. 
+            The framework consists of initial scanning, waypoint generation, navigation, and detection. 
+            The framework iteratively asks the human to compare the candidate patch set. 
             <h5>Detection</h5>
                 <figure class="figure text-center">
-                    <img src="./assets/detection.jpg" style="width: 50%">
+                    <img src="./assets/detection.jpg" style="width: 60%">
                     <figcaption class="figure-caption text-center">Detection</figcaption>
                 </figure>
+            
+            In order to search for objects given as free-form language,
+            we also need to detect the objects whose label is not in
+            the training dataset. The proposed open-set object detection module is illustrated on the above figure. 
             <p style="text-align:center;">
                 <video id="v0" width="80%" playsinline="" autoplay="" muted="" loop="" controls="">
                     <source src="./assets/method.mp4" type="video/mp4">
                 </video>
             </p>
+            The video of the proposed method on real-world demonstration. 
         </div>
     </section>
 
     <section>
         <div class="container">
             <h3><b>Results</b></h3>
-            <h5>Simulation</h5>
-            <b>Detection Results</b>
-            <br>
-            <figure class="figure text-center">
-                <img src="./assets/example2.png" style="width: 70%">
-                <figcaption class="figure-caption text-center">Detection Results</figcaption>
-            </figure>
-            <br>
-            <b>Trajectory  Examples</b>
-            <br>
-            <figure class="figure text-center">
-                <img src="./assets/example1.jpg" style="width: 50%">
-                <figcaption class="figure-caption text-center">Detection Results</figcaption>
-            </figure>
-            <h5>Realworld</h5>
             <b>Demonstration</b>
             <br>
             <figure class="figure text-center">
@@ -156,18 +143,20 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
             <b>Ablation</b>
             <br>
             <p style="text-align:center;">
-                <video id="v0" width="60%" playsinline="" autoplay="" muted="" loop="" controls="">
+                <video id="v0" width="80%" playsinline="" autoplay="" muted="" loop="" controls="">
                     <source src="./assets/ablation.mp4" type="video/mp4">
                 </video>
             </p>
+            We compare the proposed method with the baseline methods.
             <br>
             <b>Various Target</b>
             <br>
             <p style="text-align:center;">
-                <video id="v0" width="60%" playsinline="" autoplay="" muted="" loop="" controls="">
+                <video id="v0" width="80%" playsinline="" autoplay="" muted="" loop="" controls="">
                     <source src="./assets/various_target.mp4" type="video/mp4">
                 </video>
             </p>
+            We have tested various target objects.
         </div>
     </section>
 
