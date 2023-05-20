@@ -43,7 +43,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
                             </li>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             <li>
-                                <a href="https://www.youtube.com/watch?v=swL1LNX5QsI&t=1s">
+                                <a href="https://www.youtube.com/watch?v=swL1LNX5QsI">
                                     <img src="./assets/youtube.png" height="60px">
                                         <h4><strong>Video</strong></h4>
                                 </a>
@@ -89,7 +89,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
         </div>
     </section>
 
-    <section>
+    <!-- <section>
         <div class="container">
             <h3><b>Full Video</b></h3>
             <div class="col-12 text-center">
@@ -99,14 +99,14 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
                 </div>
             </div>
         </div>
-    </section>
+    </section> -->
 
     <section>
         <div class="container">
             <h3><b>Proposed Method</b></h3>
             <h5>Architecture</h5>
             <figure class="figure text-center">
-                <img src="./assets/architecture.jpg" style="width: 80%">
+                <img src="./assets/architecture.jpg" style="width: 70%">
                 <figcaption class="figure-caption text-center">Architecture</figcaption>
             </figure>
             The overall procedure of ZAVIS. We present ZAVIS framework, object search based on free-form language. 
@@ -117,10 +117,14 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
                     <img src="./assets/detection.jpg" style="width: 60%">
                     <figcaption class="figure-caption text-center">Detection</figcaption>
                 </figure>
-            
+            <br>
             In order to search for objects given as free-form language,
             we also need to detect the objects whose label is not in
             the training dataset. The proposed open-set object detection module is illustrated on the above figure. 
+    </section>
+    <section>
+        <div class="container">
+            <h3><b>Real-world Demonstration</b></h3>
             <p style="text-align:center;">
                 <video id="v0" width="80%" playsinline="" autoplay="" muted="" loop="" controls="">
                     <source src="./assets/method.mp4" type="video/mp4">
@@ -132,31 +136,30 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
 
     <section>
         <div class="container">
-            <h3><b>Results</b></h3>
-            <b>Demonstration</b>
+            <h3><b>Ablation studies on Real-world Environment</b></h3>
+            <!-- <b>Demonstration</b>
             <br>
             <figure class="figure text-center">
                 <img src="./assets/demo.jpg" style="width: 80%">
                 <figcaption class="figure-caption text-center">Realworld Demonstration</figcaption>
             </figure>
-            <br>
-            <b>Ablation</b>
+            <br> -->
             <br>
             <p style="text-align:center;">
                 <video id="v0" width="80%" playsinline="" autoplay="" muted="" loop="" controls="">
                     <source src="./assets/ablation.mp4" type="video/mp4">
                 </video>
             </p>
-            We compare the proposed method with the baseline methods.
-            <br>
-            <b>Various Target</b>
-            <br>
+        </div>
+    </section>
+    <section>
+        <div class="container">
+            <h3><b>Real-world Environment on Various Tarets</b></h3>
             <p style="text-align:center;">
                 <video id="v0" width="80%" playsinline="" autoplay="" muted="" loop="" controls="">
                     <source src="./assets/various_target.mp4" type="video/mp4">
                 </video>
             </p>
-            We have tested various target objects.
         </div>
     </section>
 
